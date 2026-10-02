@@ -9,6 +9,27 @@ A small always-on-top panel for macOS that shows live prices and daily change fo
 - Chinese and English interface
 - No Dock icon and no menu bar item; everything is in the panel's right-click menu
 
+## Why
+
+I trade US stocks, and while I'm vibe coding I want to know where the few I hold are trading. I used to check in two ways, and neither worked well:
+
+- **Switching to my broker's app or a web page.** Every look meant leaving the window I was working in.
+- **Keeping a quote window open.** It took up screen space, and other windows still covered it.
+
+What I wanted was less than either: the handful of stocks I follow, their price and change, sitting in a corner of the screen where I can see them without clicking anything.
+
+The built-in options did not fit either. The menu bar is tight on a MacBook with a notch, and showing more than one stock there means a dropdown, which is one more click. Desktop widgets refresh every few minutes at best. A terminal window cannot stay above other windows.
+
+So StockFloat is a small panel that floats above everything else and does only this.
+
+## Design choices
+
+- **Always visible, never in the way.** The panel floats over every desktop and full-screen app, never takes keyboard focus, and can let clicks pass straight through it.
+- **One glance.** One line per stock: name, price, change. No charts, news or order entry; the broker's app does those better.
+- **No pretending to be live.** A price that looks live but is stale is worse than no price. The panel says so when a data source is disconnected, puts pre-market, post-market and overnight prices on their own labelled line, and the table below states how fresh each source is.
+- **Small.** It runs all day, so it is native Swift: about 17 MB of memory and a 1.6 MB app.
+- **No broker credentials.** The Longbridge login stays in Longbridge's own command-line tool; StockFloat only starts it and reads the quotes.
+
 ## Install
 
 Requires macOS 14 or later. The download runs on both Apple silicon and Intel Macs.
