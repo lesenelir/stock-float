@@ -90,12 +90,16 @@ swift test
 ./scripts/bundle.sh --universal # Apple silicon and Intel
 ```
 
-To publish a release (needs the GitHub CLI):
+To publish a release, tag a version; GitHub Actions builds the universal app and attaches it to the release:
 
 ```sh
-./scripts/release.sh 0.1.0
+./scripts/release.sh 0.2.0
 ```
 
 ## Disclaimer
 
 Prices come from third-party sources and may be delayed or wrong. Nothing here is investment advice.
+
+## License
+
+[MIT](LICENSE)

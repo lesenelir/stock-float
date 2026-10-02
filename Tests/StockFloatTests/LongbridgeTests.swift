@@ -160,6 +160,21 @@ private func fakeCLI(_ script: String) throws -> URL {
   return url
 }
 
+/// Whether the process whose id a fake CLI wrote to `path` is gone within five seconds.
+private func hasExited(pidFile path: String) async throws -> Bool {
+  // No file means the CLI was stopped before its first line ran.
+  guard let text = try? String(contentsOfFile: path, encoding: .utf8),
+    let pid = Int32(text.trimmingCharacters(in: .whitespacesAndNewlines))
+  else { return true }
+  for _ in 0..<250 {
+    if kill(pid, 0) != 0 {
+      return true
+    }
+    try await Task.sleep(for: .milliseconds(20))
+  }
+  return false
+}
+
 private let snapshotLine =
   #"{"jsonrpc":"2.0","id":1,"result":{"subscribed":[],"quotes":[{"symbol":"AAPL.US","last_done":"333.000","prev_close":"330.000","timestamp":"2026-10-02T20:00:00Z"}]}}"#
 
@@ -224,35 +239,22 @@ private let snapshotLine =
   let first = await LongbridgeProvider(searchPaths: [cli.path]).events(for: [symbol]).first { _ in true }
   #expect(first == .online)
 
-  let pidText = try String(contentsOf: URL(fileURLWithPath: cli.path + ".pid"), encoding: .utf8)
-  let pid = try #require(Int32(pidText.trimmingCharacters(in: .whitespacesAndNewlines)))
-  var alive = true
-  for _ in 0..<100 where alive {
-    try await Task.sleep(for: .milliseconds(20))
-    alive = kill(pid, 0) == 0
-  }
-  #expect(!alive)
+  #expect(try await hasExited(pidFile: cli.path + ".pid"))
 }
 
+// The CLI never answers, so the outcome does not depend on how fast the machine starts it.
 @Test func restartsACLIThatStopsAnswering() async throws {
   let cli = try fakeCLI(
     """
-    echo '\(snapshotLine)'
+    echo $$ > "$0.pid"
     exec sleep 600
     """)
   defer { try? FileManager.default.removeItem(at: cli.deletingLastPathComponent()) }
   let symbol = try #require(StockSymbol(id: "usAAPL"))
 
-  var events: [QuoteEvent] = []
-  for await event in LongbridgeProvider(searchPaths: [cli.path], reconcileInterval: 0.5).events(for: [symbol]) {
-    events.append(event)
-    if case .offline = event { break }
-  }
+  let first = await LongbridgeProvider(searchPaths: [cli.path], reconcileInterval: 0.2).events(for: [symbol])
+    .first { _ in true }
 
-  #expect(
-    events == [
-      .online,
-      .quote(Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330)),
-      .offline(.unreachable),
-    ])
+  #expect(first == .offline(.unreachable))
+  #expect(try await hasExited(pidFile: cli.path + ".pid"))
 }

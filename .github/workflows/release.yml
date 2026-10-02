@@ -1,0 +1,62 @@
+name: Release
+
+# A pushed version tag publishes a release. A manual run is a dry run: it builds the same archive
+# and uploads it as a workflow artifact without publishing anything.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - run: swift --version
+      - run: swift test
+
+      - name: Build and package
+        id: package
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="0.0.0-dev"
+          fi
+          VERSION="$version" scripts/bundle.sh --universal
+          # ditto keeps the code signature intact; plain zip is not guaranteed to.
+          zip="build/StockFloat-$version.zip"
+          ditto -c -k --keepParent build/StockFloat.app "$zip"
+          {
+            echo "version=$version"
+            echo "zip=$zip"
+            echo "sha=$(shasum -a 256 "$zip" | cut -d' ' -f1)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload the archive (dry run)
+        if: github.event_name != 'push'
+        uses: actions/upload-artifact@v7
+        with:
+          name: StockFloat
+          path: ${{ steps.package.outputs.zip }}
+
+      - name: Publish the release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.package.outputs.version }}
+          ZIP: ${{ steps.package.outputs.zip }}
+          SHA: ${{ steps.package.outputs.sha }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" "$ZIP" \
+            --title "StockFloat $VERSION" \
+            --generate-notes \
+            --notes "Universal build for Apple silicon and Intel, macOS 14 or later.
+
+          The app is not notarized, so macOS blocks the first launch. See \"First launch\" in the README.
+
+          SHA-256 of \`StockFloat-$VERSION.zip\`: \`$SHA\`"

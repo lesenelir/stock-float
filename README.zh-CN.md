@@ -90,12 +90,16 @@ swift test
 ./scripts/bundle.sh --universal # 同时支持 Apple 芯片和 Intel
 ```
 
-发布新版本（需要 GitHub CLI）：
+发布新版本时给版本打 tag，GitHub Actions 会构建通用版本并附到 release 上：
 
 ```sh
-./scripts/release.sh 0.1.0
+./scripts/release.sh 0.2.0
 ```
 
 ## 免责声明
 
 价格来自第三方数据源，可能有延迟或错误。本项目不构成任何投资建议。
+
+## 许可证
+
+[MIT](LICENSE)
