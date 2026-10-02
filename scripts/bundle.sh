@@ -1,16 +1,25 @@
 #!/bin/sh
 # Build a release binary and wrap it as build/StockFloat.app.
+# Pass --universal to build for both Apple silicon and Intel; VERSION sets the bundle version.
 set -eu
 
 cd "$(dirname "$0")/.."
-swift build -c release
+VERSION=${VERSION:-0.1.0}
+
+ARCHS=""
+if [ "${1:-}" = "--universal" ]; then
+  ARCHS="--arch arm64 --arch x86_64"
+fi
+# $ARCHS is left unquoted on purpose so it splits into separate arguments.
+swift build -c release $ARCHS
+BIN_PATH=$(swift build -c release $ARCHS --show-bin-path)
 
 APP=build/StockFloat.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
-cp .build/release/StockFloat "$APP/Contents/MacOS/StockFloat"
+cp "$BIN_PATH/StockFloat" "$APP/Contents/MacOS/StockFloat"
 
-cat > "$APP/Contents/Info.plist" <<'EOF'
+cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -24,9 +33,9 @@ cat > "$APP/Contents/Info.plist" <<'EOF'
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0</string>
+  <string>$VERSION</string>
   <key>CFBundleVersion</key>
-  <string>1</string>
+  <string>$VERSION</string>
   <key>LSMinimumSystemVersion</key>
   <string>14.0</string>
   <key>LSUIElement</key>
