@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SettingsView: View {
+  let strings: Strings
   @State var symbolsText: String
   @State var longbridge: Bool
   @State var finnhubKey: String
@@ -12,37 +13,40 @@ struct SettingsView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("标的（每行一个）")
+        Text(strings.symbolsLabel)
         TextEditor(text: $symbolsText)
           .font(.system(size: 13, design: .monospaced))
           .frame(height: 140)
           .border(.separator)
-        Text("美股直接写代码，如 AAPL；港股 hk00700；A 股 sh600519、sz000001")
+        Text(strings.symbolsHint)
           .font(.caption)
           .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
         if !invalid.isEmpty {
-          Text("无法识别：\(invalid.joined(separator: "、"))")
+          Text(strings.unrecognized(invalid))
             .font(.caption)
             .foregroundStyle(.red)
+            .fixedSize(horizontal: false, vertical: true)
         }
       }
       VStack(alignment: .leading, spacing: 4) {
-        Toggle("美股使用长桥行情（含盘前、盘后、夜盘）", isOn: $longbridge)
-        Text("需先安装长桥 CLI，并在终端运行 longbridge auth login")
+        Toggle(strings.longbridgeToggle, isOn: $longbridge)
+        Text(strings.longbridgeHint)
           .font(.caption)
           .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
       }
       VStack(alignment: .leading, spacing: 4) {
-        Text("Finnhub API key")
-        TextField("留空则美股使用腾讯行情（约 20 秒一次快照）", text: $finnhubKey)
+        Text(strings.finnhubKey)
+        TextField(strings.finnhubPlaceholder, text: $finnhubKey)
           .textFieldStyle(.roundedBorder)
           .disabled(longbridge)
       }
       HStack {
         Spacer()
-        Button("取消", action: onCancel)
+        Button(strings.cancel, action: onCancel)
           .keyboardShortcut(.cancelAction)
-        Button("保存", action: save)
+        Button(strings.save, action: save)
           .keyboardShortcut(.defaultAction)
       }
     }

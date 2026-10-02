@@ -37,6 +37,7 @@ func rejectsUnreadableSymbols(input: String) {
   #expect(config.pollSeconds == 1)
   #expect(config.finnhubKey.isEmpty)
   #expect(config.upColor == .green)
+  #expect(config.language == .system)
 }
 
 @Test func roundTripsThroughDisk() throws {
@@ -46,6 +47,7 @@ func rejectsUnreadableSymbols(input: String) {
   config.symbols = ["hk00700"]
   config.upColor = .red
   config.clickThrough = true
+  config.language = .en
 
   try config.save(to: url)
 

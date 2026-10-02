@@ -31,7 +31,7 @@ struct LongbridgeProvider: QuoteProvider {
   /// Run one `longbridge serve` process until it exits; returns whether it ever delivered a snapshot.
   private func serve(_ symbols: [StockSymbol], _ continuation: AsyncStream<QuoteEvent>.Continuation) async -> Bool {
     guard let path = searchPaths.first(where: FileManager.default.isExecutableFile(atPath:)) else {
-      continuation.yield(.offline(hint: Self.hint(executableFound: false, detail: "")))
+      continuation.yield(.offline(Self.outage(executableFound: false, detail: "")))
       return false
     }
 
@@ -50,7 +50,7 @@ struct LongbridgeProvider: QuoteProvider {
     do {
       try process.run()
     } catch {
-      continuation.yield(.offline(hint: Self.hint(executableFound: true, detail: error.localizedDescription)))
+      continuation.yield(.offline(Self.outage(executableFound: true, detail: error.localizedDescription)))
       return false
     }
 
@@ -96,7 +96,7 @@ struct LongbridgeProvider: QuoteProvider {
               }
             case .failure(let message):
               failure.withLock { $0 = message }
-              continuation.yield(.offline(hint: Self.hint(executableFound: true, detail: message)))
+              continuation.yield(.offline(Self.outage(executableFound: true, detail: message)))
             case .other:
               break
             }
@@ -116,7 +116,7 @@ struct LongbridgeProvider: QuoteProvider {
     process.terminate()
     try? writer.close()
 
-    continuation.yield(.offline(hint: Self.hint(executableFound: true, detail: failure.withLock { $0 })))
+    continuation.yield(.offline(Self.outage(executableFound: true, detail: failure.withLock { $0 })))
     return established.withLock { $0 }
   }
 
@@ -170,15 +170,13 @@ struct LongbridgeProvider: QuoteProvider {
     return line
   }
 
-  /// What to tell the user about an outage, when `detail` (stderr or an RPC error) identifies the cause.
-  static func hint(executableFound: Bool, detail: String) -> String? {
-    guard executableFound else {
-      return "未找到 longbridge 命令，请先安装长桥 CLI"
-    }
+  /// Classify an outage from `detail`, the CLI's last stderr line or an RPC error message.
+  static func outage(executableFound: Bool, detail: String) -> Outage {
+    guard executableFound else { return .longbridgeMissing }
     if detail.contains("auth login") {
-      return "长桥未登录，请在终端运行 longbridge auth login"
+      return .longbridgeLoggedOut
     }
-    return detail.isEmpty ? nil : "长桥：\(detail)"
+    return detail.isEmpty ? .unreachable : .longbridge(detail)
   }
 }
 

@@ -2,8 +2,16 @@ enum QuoteEvent: Equatable, Sendable {
   case quote(Quote)
   /// The provider is receiving data from its source.
   case online
-  /// The source is unreachable; `hint` tells the user what to do when the cause is known.
-  case offline(hint: String?)
+  case offline(Outage)
+}
+
+/// Why a data source is unreachable, left untranslated so the interface can word it in its own language.
+enum Outage: Hashable, Sendable {
+  case unreachable
+  case longbridgeMissing
+  case longbridgeLoggedOut
+  /// An error message from the Longbridge CLI or API, shown as received.
+  case longbridge(String)
 }
 
 protocol QuoteProvider: Sendable {

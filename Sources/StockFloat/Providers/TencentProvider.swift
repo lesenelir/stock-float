@@ -16,7 +16,7 @@ struct TencentProvider: QuoteProvider {
               continuation.yield(.quote(quote))
             }
           } catch {
-            continuation.yield(.offline(hint: nil))
+            continuation.yield(.offline(.unreachable))
           }
           try? await Task.sleep(for: .seconds(pollSeconds))
         }

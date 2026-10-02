@@ -8,10 +8,11 @@ struct QuoteListView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
       ForEach(store.config.symbols, id: \.self) { symbol in
-        QuoteRow(symbol: symbol, quote: store.quotes[symbol], upColor: store.config.upColor)
+        QuoteRow(
+          symbol: symbol, quote: store.quotes[symbol], upColor: store.config.upColor, strings: store.strings)
       }
       if store.config.symbols.isEmpty {
-        Text("右键添加标的")
+        Text(store.strings.emptyHint)
           .foregroundStyle(.secondary)
       }
       ForEach(outageMessages, id: \.self) { message in
@@ -30,7 +31,7 @@ struct QuoteListView: View {
   }
 
   private var outageMessages: [String] {
-    Set(store.offlineSources.values.map { $0.isEmpty ? "连接中断，价格可能已过期" : $0 }).sorted()
+    Set(store.offlineSources.values.map(store.strings.outage)).sorted()
   }
 }
 
@@ -38,6 +39,7 @@ private struct QuoteRow: View {
   let symbol: String
   let quote: Quote?
   let upColor: Config.UpColor
+  let strings: Strings
 
   @State private var flashColor = Color.clear
   @State private var flashCount = 0
@@ -57,7 +59,7 @@ private struct QuoteRow: View {
       }
       if let extended = quote?.extended {
         HStack(spacing: 8) {
-          Text(sessionLabel(extended.session))
+          Text(strings.session(extended.session))
             .frame(maxWidth: .infinity, alignment: .leading)
           Text(priceText(extended.price))
             .monospacedDigit()
@@ -96,14 +98,6 @@ private struct QuoteRow: View {
       return parsed.code
     }
     return quote?.name ?? parsed.code
-  }
-
-  private func sessionLabel(_ session: ExtendedQuote.Session) -> String {
-    switch session {
-    case .pre: "盘前"
-    case .post: "盘后"
-    case .overnight: "夜盘"
-    }
   }
 
   private func priceText(_ price: Double) -> String {

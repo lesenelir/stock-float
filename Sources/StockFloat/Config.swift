@@ -15,6 +15,7 @@ struct Config: Codable, Equatable, Sendable {
   var pollSeconds = 3.0
   var upColor = UpColor.green
   var clickThrough = false
+  var language = LanguageSetting.system
 
   init() {}
 
@@ -29,6 +30,7 @@ struct Config: Codable, Equatable, Sendable {
     pollSeconds = max(1, try container.decodeIfPresent(Double.self, forKey: .pollSeconds) ?? defaults.pollSeconds)
     upColor = try container.decodeIfPresent(UpColor.self, forKey: .upColor) ?? defaults.upColor
     clickThrough = try container.decodeIfPresent(Bool.self, forKey: .clickThrough) ?? defaults.clickThrough
+    language = try container.decodeIfPresent(LanguageSetting.self, forKey: .language) ?? defaults.language
   }
 
   /// Normalize user-entered symbols, dropping duplicates; `invalid` lists the entries that could not be read.

@@ -34,19 +34,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   // An accessory app shows no menu bar, but text fields still need these items for ⌘C / ⌘V / ⌘W to work.
   private func makeMainMenu() -> NSMenu {
+    let strings = store.strings
     let appMenu = NSMenu()
-    appMenu.addItem(withTitle: "退出 StockFloat", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+    appMenu.addItem(withTitle: strings.quitApp, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
-    let editMenu = NSMenu(title: "编辑")
-    editMenu.addItem(withTitle: "撤销", action: Selector(("undo:")), keyEquivalent: "z")
-    editMenu.addItem(withTitle: "重做", action: Selector(("redo:")), keyEquivalent: "Z")
+    let editMenu = NSMenu(title: strings.edit)
+    editMenu.addItem(withTitle: strings.undo, action: Selector(("undo:")), keyEquivalent: "z")
+    editMenu.addItem(withTitle: strings.redo, action: Selector(("redo:")), keyEquivalent: "Z")
     editMenu.addItem(.separator())
-    editMenu.addItem(withTitle: "剪切", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-    editMenu.addItem(withTitle: "拷贝", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-    editMenu.addItem(withTitle: "粘贴", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-    editMenu.addItem(withTitle: "全选", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+    editMenu.addItem(withTitle: strings.cut, action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+    editMenu.addItem(withTitle: strings.copy, action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+    editMenu.addItem(withTitle: strings.paste, action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+    editMenu.addItem(withTitle: strings.selectAll, action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
     editMenu.addItem(.separator())
-    editMenu.addItem(withTitle: "关闭窗口", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+    editMenu.addItem(withTitle: strings.closeWindow, action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
 
     let mainMenu = NSMenu()
     for submenu in [appMenu, editMenu] {
@@ -58,24 +59,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   private func makeContextMenu() -> NSMenu {
+    let strings = store.strings
     let menu = NSMenu()
-    menu.addItem(item("设置…", #selector(openSettings)))
+    menu.addItem(item(strings.settings, #selector(openSettings)))
     menu.addItem(.separator())
-    menu.addItem(item("绿涨红跌", #selector(useGreenUp), checked: store.config.upColor == .green))
-    menu.addItem(item("红涨绿跌", #selector(useRedUp), checked: store.config.upColor == .red))
+    menu.addItem(item(strings.greenUp, #selector(useGreenUp), checked: store.config.upColor == .green))
+    menu.addItem(item(strings.redUp, #selector(useRedUp), checked: store.config.upColor == .red))
     menu.addItem(.separator())
-    menu.addItem(item("鼠标穿透（按住 ⌥ 临时操作）", #selector(toggleClickThrough), checked: store.config.clickThrough))
+    menu.addItem(item(strings.clickThrough, #selector(toggleClickThrough), checked: store.config.clickThrough))
 
     let loginItem = item(
-      "开机启动", #selector(toggleLaunchAtLogin), checked: canLaunchAtLogin && SMAppService.mainApp.status == .enabled)
+      strings.launchAtLogin, #selector(toggleLaunchAtLogin),
+      checked: canLaunchAtLogin && SMAppService.mainApp.status == .enabled)
     if !canLaunchAtLogin {
       loginItem.action = nil
-      loginItem.toolTip = "需要以打包后的 StockFloat.app 运行"
+      loginItem.toolTip = strings.launchAtLoginUnavailable
     }
     menu.addItem(loginItem)
 
+    let languageMenu = NSMenu()
+    for setting in LanguageSetting.allCases {
+      let languageItem = item(
+        strings.name(of: setting), #selector(selectLanguage(_:)), checked: store.config.language == setting)
+      languageItem.representedObject = setting.rawValue
+      languageMenu.addItem(languageItem)
+    }
+    let languageItem = NSMenuItem(title: strings.languageMenu, action: nil, keyEquivalent: "")
+    languageItem.submenu = languageMenu
+    menu.addItem(languageItem)
+
     menu.addItem(.separator())
-    menu.addItem(withTitle: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
+    menu.addItem(withTitle: strings.quit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
     return menu
   }
 
@@ -91,6 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   @objc private func openSettings() {
     settingsWindow?.close()
     let view = SettingsView(
+      strings: store.strings,
       symbolsText: store.config.symbols.map(Self.editableText).joined(separator: "\n"),
       longbridge: store.config.longbridge,
       finnhubKey: store.config.finnhubKey,
@@ -105,7 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       onCancel: { [weak self] in self?.settingsWindow?.close() }
     )
     let window = NSWindow(contentViewController: NSHostingController(rootView: view))
-    window.title = "StockFloat 设置"
+    window.title = store.strings.settingsTitle
     window.styleMask = [.titled, .closable]
     window.isReleasedWhenClosed = false
     window.center()
@@ -126,6 +141,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
   @objc private func useRedUp() {
     store.update { $0.upColor = .red }
+  }
+
+  @objc private func selectLanguage(_ sender: NSMenuItem) {
+    guard let rawValue = sender.representedObject as? String, let setting = LanguageSetting(rawValue: rawValue)
+    else { return }
+    store.update { $0.language = setting }
+    // The panel follows the store on its own; the main menu and an open settings window were built once.
+    NSApp.mainMenu = makeMainMenu()
+    settingsWindow?.close()
   }
 
   @objc private func toggleClickThrough() {

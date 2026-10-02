@@ -7,13 +7,18 @@ import Observation
 final class QuoteStore {
   private(set) var config: Config
   private(set) var quotes: [String: Quote] = [:]
-  /// Data sources that are currently unreachable, with a hint for the user when the cause is known (else empty).
-  private(set) var offlineSources: [String: String] = [:]
+  /// Data sources that are currently unreachable, and why.
+  private(set) var offlineSources: [String: Outage] = [:]
 
   @ObservationIgnored private var tasks: [Task<Void, Never>] = []
 
   init(config: Config) {
     self.config = config
+  }
+
+  /// The interface strings for the configured language.
+  var strings: Strings {
+    Strings(language: config.language.resolved())
   }
 
   /// (Re)start the feeds for the configured symbols.
@@ -70,8 +75,8 @@ final class QuoteStore {
       quotes[quote.symbol] = quote
     case .online:
       offlineSources[source] = nil
-    case .offline(let hint):
-      offlineSources[source] = hint ?? ""
+    case .offline(let outage):
+      offlineSources[source] = outage
     }
   }
 }

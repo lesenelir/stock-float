@@ -75,7 +75,7 @@ struct FinnhubProvider: QuoteProvider {
     var backoff = 1.0
     while !Task.isCancelled {
       let established = await connect(symbols, book, continuation)
-      continuation.yield(.offline(hint: nil))
+      continuation.yield(.offline(.unreachable))
       backoff = established ? 1 : min(backoff * 2, 60)
       try? await Task.sleep(for: .seconds(backoff))
     }

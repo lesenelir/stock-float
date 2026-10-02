@@ -93,14 +93,14 @@ func decodesPushes(wire: String, session: ExtendedQuote.Session?) {
   #expect(LongbridgeProvider.remoteSymbol(try #require(StockSymbol(id: "usBRK.B"))) == "BRK.B.US")
 }
 
-@Test func explainsKnownOutages() {
-  #expect(LongbridgeProvider.hint(executableFound: false, detail: "") == "未找到 longbridge 命令，请先安装长桥 CLI")
+@Test func classifiesOutages() {
+  #expect(LongbridgeProvider.outage(executableFound: false, detail: "") == .longbridgeMissing)
   #expect(
-    LongbridgeProvider.hint(
+    LongbridgeProvider.outage(
       executableFound: true, detail: "Error: Not authenticated. Please run `longbridge auth login` first.")
-      == "长桥未登录，请在终端运行 longbridge auth login")
-  #expect(LongbridgeProvider.hint(executableFound: true, detail: "no quote access") == "长桥：no quote access")
-  #expect(LongbridgeProvider.hint(executableFound: true, detail: "") == nil)
+      == .longbridgeLoggedOut)
+  #expect(LongbridgeProvider.outage(executableFound: true, detail: "no quote access") == .longbridge("no quote access"))
+  #expect(LongbridgeProvider.outage(executableFound: true, detail: "") == .unreachable)
 }
 
 // MARK: Merging
@@ -191,7 +191,7 @@ private let snapshotLine =
         Quote(
           symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330,
           extended: ExtendedQuote(session: .post, price: 334, prevClose: 333))),
-      .offline(hint: "长桥未登录，请在终端运行 longbridge auth login"),
+      .offline(.longbridgeLoggedOut),
     ])
   let log = try String(contentsOf: URL(fileURLWithPath: cli.path + ".log"), encoding: .utf8)
     .split(separator: "\n")
@@ -208,7 +208,7 @@ private let snapshotLine =
   let first = await LongbridgeProvider(searchPaths: ["/nonexistent/longbridge"]).events(for: [symbol])
     .first { _ in true }
 
-  #expect(first == .offline(hint: "未找到 longbridge 命令，请先安装长桥 CLI"))
+  #expect(first == .offline(.longbridgeMissing))
 }
 
 @Test func stopsTheCLIWhenTheStreamIsDropped() async throws {
@@ -253,6 +253,6 @@ private let snapshotLine =
     events == [
       .online,
       .quote(Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330)),
-      .offline(hint: nil),
+      .offline(.unreachable),
     ])
 }
