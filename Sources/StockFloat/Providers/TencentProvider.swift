@@ -48,7 +48,8 @@ struct TencentProvider: QuoteProvider {
     symbol.market == .hk ? "r_" + symbol.id : symbol.id
   }
 
-  /// Parse `v_usAAPL="200~苹果~AAPL.OQ~333.27~330.32~…";` statements; fields are 1 name, 3 price, 4 previous close.
+  /// Parse `v_usAAPL="200~苹果~AAPL.OQ~333.27~330.32~…";` statements; fields are 1 name, 3 price, 4 previous
+  /// close, 30 quote time.
   static func parse(_ text: String) -> [Quote] {
     text.split(separator: ";").compactMap { statement in
       guard let equals = statement.firstIndex(of: "=") else { return nil }
@@ -67,8 +68,30 @@ struct TencentProvider: QuoteProvider {
         let prevClose = Double(fields[4]),
         price > 0
       else { return nil }
-      return Quote(symbol: symbol.id, name: String(fields[1]), price: price, prevClose: prevClose)
+      return Quote(
+        symbol: symbol.id, name: String(fields[1]), price: price, prevClose: prevClose,
+        time: fields.count > 30 ? time(String(fields[30]), in: symbol.market) : nil)
     }
+  }
+
+  /// Read a quote time, which is local to the market and punctuated differently in each:
+  /// `2026-10-02 13:30:40`, `2026/10/02 16:08:10`, `20260930161458`.
+  static func time(_ text: String, in market: Market) -> Date? {
+    let digits = text.filter(\.isNumber).compactMap(\.wholeNumberValue)
+    guard digits.count == 14 else { return nil }
+    func number(_ range: Range<Int>) -> Int {
+      digits[range].reduce(0) { $0 * 10 + $1 }
+    }
+    var calendar = Calendar(identifier: .gregorian)
+    switch market {
+    case .us: calendar.timeZone = TimeZone(identifier: "America/New_York") ?? .gmt
+    case .hk: calendar.timeZone = TimeZone(identifier: "Asia/Hong_Kong") ?? .gmt
+    case .sh, .sz: calendar.timeZone = TimeZone(identifier: "Asia/Shanghai") ?? .gmt
+    }
+    return calendar.date(
+      from: DateComponents(
+        year: number(0..<4), month: number(4..<6), day: number(6..<8),
+        hour: number(8..<10), minute: number(10..<12), second: number(12..<14)))
   }
 
   private static let quoteTrim = CharacterSet(charactersIn: "\"").union(.whitespacesAndNewlines)

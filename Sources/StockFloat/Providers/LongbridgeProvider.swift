@@ -415,7 +415,8 @@ struct LongbridgeBook {
       name: ticker,
       price: regular.price,
       prevClose: entry.prevClose,
-      extended: latest.map { ExtendedQuote(session: $0.key, price: $0.value.price, prevClose: regular.price) }
+      extended: latest.map { ExtendedQuote(session: $0.key, price: $0.value.price, prevClose: regular.price) },
+      time: latest?.value.time ?? regular.time
     )
   }
 }

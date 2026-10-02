@@ -17,10 +17,23 @@ private let fixture = """
 
   #expect(
     quotes == [
-      Quote(symbol: "usAAPL", name: "苹果", price: 333.27, prevClose: 330.32),
-      Quote(symbol: "hk00700", name: "腾讯控股", price: 421.2, prevClose: 431),
-      Quote(symbol: "sh600519", name: "贵州茅台", price: 1258.62, prevClose: 1235.58),
+      // Each time is local to its market: 12:49:20 New York, 16:08:10 Hong Kong, 16:14:58 Shanghai.
+      Quote(
+        symbol: "usAAPL", name: "苹果", price: 333.27, prevClose: 330.32,
+        time: Date(timeIntervalSince1970: 1_790_959_760)),
+      Quote(
+        symbol: "hk00700", name: "腾讯控股", price: 421.2, prevClose: 431,
+        time: Date(timeIntervalSince1970: 1_790_928_490)),
+      Quote(
+        symbol: "sh600519", name: "贵州茅台", price: 1258.62, prevClose: 1235.58,
+        time: Date(timeIntervalSince1970: 1_790_756_098)),
     ])
+}
+
+@Test func unreadableTimesAreLeftOut() {
+  #expect(TencentProvider.time("", in: .us) == nil)
+  #expect(TencentProvider.time("2026-10-02", in: .us) == nil)
+  #expect(TencentProvider.parse("v_usAAPL=\"200~苹果~AAPL.OQ~333.27~330.32\";").first?.time == nil)
 }
 
 @Test func changePercentMatchesTheFeed() throws {

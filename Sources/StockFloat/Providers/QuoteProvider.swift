@@ -14,6 +14,10 @@ enum Outage: Hashable, Sendable {
   case longbridge(String)
 }
 
+enum QuoteSource: Hashable, Sendable {
+  case longbridge, finnhub, tencent
+}
+
 protocol QuoteProvider: Sendable {
   /// Emit quotes for `symbols` until the consumer stops iterating the stream.
   func events(for symbols: [StockSymbol]) -> AsyncStream<QuoteEvent>

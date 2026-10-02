@@ -8,7 +8,7 @@ final class QuoteStore {
   private(set) var config: Config
   private(set) var quotes: [String: Quote] = [:]
   /// Data sources that are currently unreachable, and why.
-  private(set) var offlineSources: [String: Outage] = [:]
+  private(set) var offlineSources: [QuoteSource: Outage] = [:]
 
   @ObservationIgnored private var tasks: [Task<Void, Never>] = []
 
@@ -32,13 +32,13 @@ final class QuoteStore {
     var symbols = config.symbols.compactMap(StockSymbol.init(id:))
     let usSymbols = symbols.filter { $0.market == .us }
     if config.longbridge {
-      run(LongbridgeProvider(), named: "Longbridge", for: usSymbols)
+      run(LongbridgeProvider(), from: .longbridge, for: usSymbols)
       symbols.removeAll { $0.market == .us }
     } else if !config.finnhubKey.isEmpty {
-      run(FinnhubProvider(apiKey: config.finnhubKey), named: "Finnhub", for: usSymbols)
+      run(FinnhubProvider(apiKey: config.finnhubKey), from: .finnhub, for: usSymbols)
       symbols.removeAll { $0.market == .us }
     }
-    run(TencentProvider(pollSeconds: config.pollSeconds), named: "Tencent", for: symbols)
+    run(TencentProvider(pollSeconds: config.pollSeconds), from: .tencent, for: symbols)
   }
 
   /// Apply and persist a config change, restarting the feeds when it affects them.
@@ -58,18 +58,18 @@ final class QuoteStore {
     }
   }
 
-  private func run(_ provider: some QuoteProvider, named name: String, for symbols: [StockSymbol]) {
+  private func run(_ provider: some QuoteProvider, from source: QuoteSource, for symbols: [StockSymbol]) {
     guard !symbols.isEmpty else { return }
     let task = Task { [weak self] in
       for await event in provider.events(for: symbols) {
         guard !Task.isCancelled else { return }
-        self?.apply(event, from: name)
+        self?.apply(event, from: source)
       }
     }
     tasks.append(task)
   }
 
-  private func apply(_ event: QuoteEvent, from source: String) {
+  private func apply(_ event: QuoteEvent, from source: QuoteSource) {
     switch event {
     case .quote(let quote):
       quotes[quote.symbol] = quote

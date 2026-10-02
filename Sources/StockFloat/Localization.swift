@@ -54,8 +54,27 @@ struct Strings: Equatable, Sendable {
   // MARK: Context menu
 
   var settings: String { t("设置…", "Settings…") }
-  var greenUp: String { t("绿涨红跌", "Green up, red down") }
-  var redUp: String { t("红涨绿跌", "Red up, green down") }
+  var hidePanel: String { t("隐藏小窗", "Hide Panel") }
+  var appearance: String { t("外观", "Appearance") }
+  var colors: String { t("配色", "Colors") }
+  var textSize: String { t("字号", "Text Size") }
+  var opacity: String { t("不透明度", "Opacity") }
+
+  func name(of color: Config.UpColor) -> String {
+    switch color {
+    case .green: t("绿涨红跌", "Green up, red down")
+    case .red: t("红涨绿跌", "Red up, green down")
+    case .mono: t("不着色", "No color")
+    }
+  }
+
+  func name(of size: Config.TextSize) -> String {
+    switch size {
+    case .small: t("小", "Small")
+    case .medium: t("中", "Medium")
+    case .large: t("大", "Large")
+    }
+  }
   var clickThrough: String { t("鼠标穿透（按住 ⌥ 临时操作）", "Click-through (hold ⌥ to interact)") }
   var launchAtLogin: String { t("开机启动", "Launch at login") }
   var launchAtLoginUnavailable: String { t("需要以打包后的 StockFloat.app 运行", "Requires running the bundled StockFloat.app") }

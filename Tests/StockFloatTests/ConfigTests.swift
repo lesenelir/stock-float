@@ -38,6 +38,23 @@ func rejectsUnreadableSymbols(input: String) {
   #expect(config.finnhubKey.isEmpty)
   #expect(config.upColor == .green)
   #expect(config.language == .system)
+  #expect(config.hotkey == "ctrl+opt+s")
+  #expect(config.textSize == .small)
+  #expect(config.opacity == 1)
+}
+
+@Test(arguments: [("green", Config.UpColor.green), ("red", .red), ("mono", .mono)])
+func readsEveryColorScheme(raw: String, color: Config.UpColor) throws {
+  let config = try JSONDecoder().decode(Config.self, from: Data(#"{"upColor":"\#(raw)"}"#.utf8))
+
+  #expect(config.upColor == color)
+}
+
+@Test(arguments: [(0.0, 0.3), (0.7, 0.7), (5.0, 1.0)])
+func keepsOpacityInRange(stored: Double, opacity: Double) throws {
+  let config = try JSONDecoder().decode(Config.self, from: Data(#"{"opacity":\#(stored)}"#.utf8))
+
+  #expect(config.opacity == opacity)
 }
 
 @Test func roundTripsThroughDisk() throws {
@@ -48,6 +65,9 @@ func rejectsUnreadableSymbols(input: String) {
   config.upColor = .red
   config.clickThrough = true
   config.language = .en
+  config.hotkey = "cmd+shift+9"
+  config.textSize = .large
+  config.opacity = 0.7
 
   try config.save(to: url)
 

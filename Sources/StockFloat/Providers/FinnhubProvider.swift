@@ -221,6 +221,8 @@ actor FinnhubBook {
 
   private func quote(_ ticker: String, _ entry: Entry) -> Quote? {
     guard entry.price > 0, entry.prevClose > 0 else { return nil }
-    return Quote(symbol: Market.us.rawValue + ticker, name: ticker, price: entry.price, prevClose: entry.prevClose)
+    return Quote(
+      symbol: Market.us.rawValue + ticker, name: ticker, price: entry.price, prevClose: entry.prevClose,
+      time: entry.priceTime > 0 ? Date(timeIntervalSince1970: entry.priceTime) : nil)
   }
 }

@@ -42,3 +42,13 @@ func resolvesTheLanguage(setting: LanguageSetting, preferred: [String], language
   #expect(Strings(language: .zh).unrecognized(["a b", "苹果"]) == "无法识别：a b、苹果")
   #expect(Strings(language: .en).unrecognized(["a b", "苹果"]) == "Not recognized: a b, 苹果")
 }
+
+@Test func namesTheAppearanceChoices() {
+  let zh = Strings(language: .zh)
+  let en = Strings(language: .en)
+
+  #expect(Config.UpColor.allCases.map(zh.name(of:)) == ["绿涨红跌", "红涨绿跌", "不着色"])
+  #expect(Config.UpColor.allCases.map(en.name(of:)) == ["Green up, red down", "Red up, green down", "No color"])
+  #expect(Config.TextSize.allCases.map(zh.name(of:)) == ["小", "中", "大"])
+  #expect(Config.TextSize.allCases.map(en.name(of:)) == ["Small", "Medium", "Large"])
+}

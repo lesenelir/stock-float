@@ -60,10 +60,21 @@ struct Quote: Equatable, Sendable {
   var prevClose: Double
   /// Set while a pre-market, post-market or overnight price is newer than the regular one.
   var extended: ExtendedQuote?
+  /// When the newest price shown was traded or quoted, if the source says.
+  var time: Date?
+
+  /// How long a price can go without an update before it is shown as stale.
+  static let staleAfter: TimeInterval = 30 * 60
 
   /// Change against the previous close, in percent.
   var changePercent: Double {
     percentChange(of: price, from: prevClose)
+  }
+
+  /// Whether the price is old enough to be misleading; unknown times are not treated as stale.
+  func isStale(at now: Date) -> Bool {
+    guard let time else { return false }
+    return now.timeIntervalSince(time) > Self.staleAfter
   }
 }
 

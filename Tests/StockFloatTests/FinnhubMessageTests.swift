@@ -34,10 +34,10 @@ import Testing
   // The snapshot is older than the trade, so it supplies only the previous close.
   #expect(
     await book.reference(ticker: "AAPL", price: 331, prevClose: 330, time: 50)
-      == Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330))
+      == Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330, time: Date(timeIntervalSince1970: 100)))
   #expect(
     await book.trade(ticker: "AAPL", price: 334, time: 101)
-      == Quote(symbol: "usAAPL", name: "AAPL", price: 334, prevClose: 330))
+      == Quote(symbol: "usAAPL", name: "AAPL", price: 334, prevClose: 330, time: Date(timeIntervalSince1970: 101)))
 }
 
 @Test func staleTradesAndUnknownTickersAreDropped() async {
@@ -45,7 +45,7 @@ import Testing
 
   #expect(
     await book.reference(ticker: "AAPL", price: 333, prevClose: 330, time: 200)
-      == Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330))
+      == Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330, time: Date(timeIntervalSince1970: 200)))
   #expect(await book.trade(ticker: "AAPL", price: 320, time: 150) == nil)
   // Finnhub answers an unknown ticker with zeros.
   #expect(await book.reference(ticker: "NOPE", price: 0, prevClose: 0, time: 0) == nil)

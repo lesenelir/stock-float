@@ -6,28 +6,33 @@ struct QuoteListView: View {
   let onResize: (CGSize) -> Void
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 2) {
-      ForEach(store.config.symbols, id: \.self) { symbol in
-        QuoteRow(
-          symbol: symbol, quote: store.quotes[symbol], upColor: store.config.upColor, strings: store.strings)
+    let scale = store.config.textSize.scale
+    // Re-evaluated every minute, so a price that stops updating fades without new data arriving.
+    TimelineView(.periodic(from: .now, by: 60)) { timeline in
+      VStack(alignment: .leading, spacing: 2) {
+        ForEach(store.config.symbols, id: \.self) { symbol in
+          let quote = store.quotes[symbol]
+          QuoteRow(symbol: symbol, quote: quote, upColor: store.config.upColor, strings: store.strings, scale: scale)
+            .opacity(quote?.isStale(at: timeline.date) == true ? 0.45 : 1)
+        }
+        if store.config.symbols.isEmpty {
+          Text(store.strings.emptyHint)
+            .foregroundStyle(.secondary)
+        }
+        ForEach(outageMessages, id: \.self) { message in
+          Text(message)
+            .font(.system(size: 10 * scale))
+            .foregroundStyle(.orange)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 4)
+        }
       }
-      if store.config.symbols.isEmpty {
-        Text(store.strings.emptyHint)
-          .foregroundStyle(.secondary)
-      }
-      ForEach(outageMessages, id: \.self) { message in
-        Text(message)
-          .font(.system(size: 10))
-          .foregroundStyle(.orange)
-          .fixedSize(horizontal: false, vertical: true)
-          .padding(.horizontal, 4)
-      }
+      .font(.system(size: 12 * scale, weight: .medium))
+      .padding(6)
+      .frame(width: 204 * scale)
+      .fixedSize()
+      .onGeometryChange(for: CGSize.self) { $0.size } action: { onResize($0) }
     }
-    .font(.system(size: 12, weight: .medium))
-    .padding(6)
-    .frame(width: 204)
-    .fixedSize()
-    .onGeometryChange(for: CGSize.self) { $0.size } action: { onResize($0) }
   }
 
   private var outageMessages: [String] {
@@ -40,6 +45,7 @@ private struct QuoteRow: View {
   let quote: Quote?
   let upColor: Config.UpColor
   let strings: Strings
+  let scale: Double
 
   @State private var flashColor = Color.clear
   @State private var flashCount = 0
@@ -54,8 +60,8 @@ private struct QuoteRow: View {
           .monospacedDigit()
         Text(quote.map { percentText($0.changePercent) } ?? "—")
           .monospacedDigit()
-          .foregroundStyle(color(for: quote?.changePercent ?? 0))
-          .frame(width: 56, alignment: .trailing)
+          .foregroundStyle(tint(for: quote?.changePercent ?? 0, otherwise: .primary))
+          .frame(width: 56 * scale, alignment: .trailing)
       }
       if let extended = quote?.extended {
         HStack(spacing: 8) {
@@ -65,10 +71,10 @@ private struct QuoteRow: View {
             .monospacedDigit()
           Text(percentText(extended.changePercent))
             .monospacedDigit()
-            .foregroundStyle(color(for: extended.changePercent))
-            .frame(width: 56, alignment: .trailing)
+            .foregroundStyle(tint(for: extended.changePercent, otherwise: .secondary))
+            .frame(width: 56 * scale, alignment: .trailing)
         }
-        .font(.system(size: 10, weight: .medium))
+        .font(.system(size: 10 * scale, weight: .medium))
         .foregroundStyle(.secondary)
         .padding(.leading, 8)
       }
@@ -86,7 +92,7 @@ private struct QuoteRow: View {
     }
     .onChange(of: quote?.extended?.price ?? quote?.price) { old, new in
       guard let old, let new, old != new else { return }
-      flashColor = color(for: new - old)
+      flashColor = tint(for: new - old, otherwise: .gray)
       flashCount += 1
     }
   }
@@ -108,7 +114,11 @@ private struct QuoteRow: View {
     String(format: "%+.2f%%", percent)
   }
 
-  private func color(for change: Double) -> Color {
+  /// The gain or loss colour, or `plain` when the colour scheme is monochrome.
+  private func tint(for change: Double, otherwise plain: Color) -> Color {
+    if upColor == .mono {
+      return plain
+    }
     if change == 0 {
       return .secondary
     }

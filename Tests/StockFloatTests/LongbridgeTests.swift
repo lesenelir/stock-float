@@ -37,7 +37,9 @@ private func closedSnapshot(sessions: [ExtendedQuote.Session: LongbridgePrice] =
 
   // Every extended price predates the regular one, so a session in progress shows a single line.
   var book = LongbridgeBook()
-  #expect(book.apply(expected) == Quote(symbol: "usSOXL", name: "SOXL", price: 163.5, prevClose: 153.69))
+  #expect(
+    book.apply(expected)
+      == Quote(symbol: "usSOXL", name: "SOXL", price: 163.5, prevClose: 153.69, time: at(1_790_964_347)))
 }
 
 @Test func decodesTheQuoteArrayNumericDecimalsAndOtherTimeForms() {
@@ -133,7 +135,7 @@ func decodesPushes(wire: String, session: ExtendedQuote.Session?) {
 
   // The next regular session opens: its price is newer than every extended one, so the second line goes away.
   let regular = book.apply(LongbridgeTick(symbol: "AAPL.US", last: price(336, 500), session: nil))
-  #expect(regular == Quote(symbol: "usAAPL", name: "AAPL", price: 336, prevClose: 330))
+  #expect(regular == Quote(symbol: "usAAPL", name: "AAPL", price: 336, prevClose: 330, time: at(500)))
 }
 
 @Test func pushesBeforeTheSnapshotAreHeldBack() {
@@ -201,11 +203,12 @@ private let snapshotLine =
   #expect(
     events == [
       .online,
-      .quote(Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330)),
+      .quote(Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330, time: at(1_790_971_200))),
+      // The time follows the extended price once that is the newest one.
       .quote(
         Quote(
           symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330,
-          extended: ExtendedQuote(session: .post, price: 334, prevClose: 333))),
+          extended: ExtendedQuote(session: .post, price: 334, prevClose: 333), time: at(1_790_971_500))),
       .offline(.longbridgeLoggedOut),
     ])
   let log = try String(contentsOf: URL(fileURLWithPath: cli.path + ".log"), encoding: .utf8)

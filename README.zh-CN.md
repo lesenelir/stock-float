@@ -58,12 +58,15 @@ xattr -dr com.apple.quarantine /Applications/StockFloat.app
 右键小窗打开菜单：
 
 - **设置…**：编辑标的列表和数据源。
-- **绿涨红跌** / **红涨绿跌**：设置涨跌配色。
+- **隐藏小窗**：把它藏起来。在任何应用里按 **⌃⌥S** 都能隐藏或显示；再次打开 StockFloat 也会让它重新出现。
+- **外观**：设置配色（绿涨红跌、红涨绿跌、不着色）、字号和不透明度。
 - **鼠标穿透**：点击会穿过小窗；按住 ⌥ 可以临时操作它。
 - **开机启动**
 - **语言**：在跟随系统、中文、English 之间切换。
 
 拖动小窗可以移动位置，位置会被记住。
+
+价格超过 30 分钟没有更新时，那一行会变暗；休市、午休、断线都是这个样子。
 
 ### 标的格式
 
@@ -76,7 +79,7 @@ xattr -dr com.apple.quarantine /Applications/StockFloat.app
 | 沪市 | `sh` 加 6 位数字 | `sh600519` |
 | 深市 | `sz` 加 6 位数字 | `sz000001` |
 
-配置保存在 `~/.config/stock-float/config.json`。
+配置保存在 `~/.config/stock-float/config.json`。想换快捷键，改里面的 `hotkey`（例如 `"cmd+shift+9"`，留空 `""` 则不启用），然后重启应用。
 
 ## 数据源
 

@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private var panel: FloatingPanel?
   private var settingsWindow: NSWindow?
   private var modifierTimer: Timer?
+  private var hotkey: GlobalHotkey?
 
   private static let positionKey = "panelTopLeft"
 
@@ -24,10 +25,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       UserDefaults.standard.set(NSStringFromPoint(topLeft), forKey: Self.positionKey)
     }
     panel.place(topLeft: UserDefaults.standard.string(forKey: Self.positionKey).map(NSPointFromString))
+    panel.alphaValue = store.config.opacity
     panel.orderFrontRegardless()
 
     applyClickThrough()
+    registerHotkey()
     store.start()
+  }
+
+  // With no Dock or menu bar item, opening the app again is the way back to a hidden panel.
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+    panel?.orderFrontRegardless()
+    return false
   }
 
   // MARK: Menus
@@ -62,10 +71,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let strings = store.strings
     let menu = NSMenu()
     menu.addItem(item(strings.settings, #selector(openSettings)))
+    let hideItem = item(strings.hidePanel, #selector(togglePanel))
+    // Shown only when the shortcut is actually registered, so the menu never advertises a dead key.
+    if hotkey != nil, let spec = HotkeySpec(store.config.hotkey) {
+      hideItem.keyEquivalent = spec.key
+      hideItem.keyEquivalentModifierMask = spec.modifiers
+    }
+    menu.addItem(hideItem)
     menu.addItem(.separator())
-    menu.addItem(item(strings.greenUp, #selector(useGreenUp), checked: store.config.upColor == .green))
-    menu.addItem(item(strings.redUp, #selector(useRedUp), checked: store.config.upColor == .red))
-    menu.addItem(.separator())
+
+    let appearanceMenu = NSMenu()
+    appearanceMenu.addItem(.sectionHeader(title: strings.colors))
+    for color in Config.UpColor.allCases {
+      appearanceMenu.addItem(
+        choice(strings.name(of: color), #selector(selectColor(_:)), color.rawValue, store.config.upColor == color))
+    }
+    appearanceMenu.addItem(.sectionHeader(title: strings.textSize))
+    for size in Config.TextSize.allCases {
+      appearanceMenu.addItem(
+        choice(strings.name(of: size), #selector(selectTextSize(_:)), size.rawValue, store.config.textSize == size))
+    }
+    appearanceMenu.addItem(.sectionHeader(title: strings.opacity))
+    for opacity in Config.opacityChoices {
+      appearanceMenu.addItem(
+        choice(
+          "\(Int((opacity * 100).rounded()))%", #selector(selectOpacity(_:)), opacity,
+          store.config.opacity == opacity))
+    }
+    let appearanceItem = NSMenuItem(title: strings.appearance, action: nil, keyEquivalent: "")
+    appearanceItem.submenu = appearanceMenu
+    menu.addItem(appearanceItem)
+
     menu.addItem(item(strings.clickThrough, #selector(toggleClickThrough), checked: store.config.clickThrough))
 
     let loginItem = item(
@@ -79,10 +115,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     let languageMenu = NSMenu()
     for setting in LanguageSetting.allCases {
-      let languageItem = item(
-        strings.name(of: setting), #selector(selectLanguage(_:)), checked: store.config.language == setting)
-      languageItem.representedObject = setting.rawValue
-      languageMenu.addItem(languageItem)
+      languageMenu.addItem(
+        choice(
+          strings.name(of: setting), #selector(selectLanguage(_:)), setting.rawValue,
+          store.config.language == setting))
     }
     let languageItem = NSMenuItem(title: strings.languageMenu, action: nil, keyEquivalent: "")
     languageItem.submenu = languageMenu
@@ -97,6 +133,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
     item.target = self
     item.state = checked ? .on : .off
+    return item
+  }
+
+  /// One option of a pick-one group; `value` comes back to the action as `representedObject`.
+  private func choice(_ title: String, _ action: Selector, _ value: Any, _ selected: Bool) -> NSMenuItem {
+    let item = item(title, action, checked: selected)
+    item.representedObject = value
     return item
   }
 
@@ -135,12 +178,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     return symbol.code
   }
 
-  @objc private func useGreenUp() {
-    store.update { $0.upColor = .green }
+  @objc private func togglePanel() {
+    guard let panel else { return }
+    if panel.isVisible {
+      panel.orderOut(nil)
+    } else {
+      panel.orderFrontRegardless()
+    }
   }
 
-  @objc private func useRedUp() {
-    store.update { $0.upColor = .red }
+  private func registerHotkey() {
+    hotkey?.unregister()
+    hotkey = HotkeySpec(store.config.hotkey).flatMap { spec in
+      GlobalHotkey(spec) { [weak self] in self?.togglePanel() }
+    }
+  }
+
+  @objc private func selectColor(_ sender: NSMenuItem) {
+    guard let color = (sender.representedObject as? String).flatMap(Config.UpColor.init(rawValue:)) else { return }
+    store.update { $0.upColor = color }
+  }
+
+  @objc private func selectTextSize(_ sender: NSMenuItem) {
+    guard let size = (sender.representedObject as? String).flatMap(Config.TextSize.init(rawValue:)) else { return }
+    store.update { $0.textSize = size }
+  }
+
+  @objc private func selectOpacity(_ sender: NSMenuItem) {
+    guard let opacity = sender.representedObject as? Double else { return }
+    store.update { $0.opacity = opacity }
+    panel?.alphaValue = opacity
   }
 
   @objc private func selectLanguage(_ sender: NSMenuItem) {

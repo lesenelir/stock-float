@@ -58,12 +58,15 @@ You only need to do this once per download.
 Right-click the panel for the menu:
 
 - **Settings…** edits the watch list and data sources.
-- **Green up, red down** / **Red up, green down** sets the colours.
+- **Hide Panel** hides it. Press **⌃⌥S** in any app to hide or show it; opening StockFloat again also brings it back.
+- **Appearance** sets the colors (green up, red up, or no color), the text size and the opacity.
 - **Click-through** lets clicks pass through the panel; hold ⌥ to interact with it again.
 - **Launch at login**
 - **Language** switches between System, 中文 and English.
 
 Drag the panel to move it; the position is remembered.
+
+A row fades when its price has not updated for 30 minutes, which is what a closed market, a lunch break or a lost connection all look like.
 
 ### Symbols
 
@@ -76,7 +79,7 @@ One per line in Settings:
 | Shanghai | `sh` + 6 digits | `sh600519` |
 | Shenzhen | `sz` + 6 digits | `sz000001` |
 
-Settings are stored in `~/.config/stock-float/config.json`.
+Settings are stored in `~/.config/stock-float/config.json`. To change the shortcut, edit `hotkey` there (for example `"cmd+shift+9"`, or `""` for none) and restart the app.
 
 ## Data sources
 
