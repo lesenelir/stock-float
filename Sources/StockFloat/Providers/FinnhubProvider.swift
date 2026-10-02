@@ -75,7 +75,7 @@ struct FinnhubProvider: QuoteProvider {
     var backoff = 1.0
     while !Task.isCancelled {
       let established = await connect(symbols, book, continuation)
-      continuation.yield(.connection(false))
+      continuation.yield(.offline(hint: nil))
       backoff = established ? 1 : min(backoff * 2, 60)
       try? await Task.sleep(for: .seconds(backoff))
     }
@@ -102,7 +102,7 @@ struct FinnhubProvider: QuoteProvider {
             try await socket.send(.string(#"{"type":"subscribe","symbol":"\#(symbol.code)"}"#))
           }
           established.withLock { $0 = true }
-          continuation.yield(.connection(true))
+          continuation.yield(.online)
           while !Task.isCancelled {
             guard let data = try await Self.payload(of: socket.receive()) else { continue }
             for trade in Self.latestTrades(in: data) {

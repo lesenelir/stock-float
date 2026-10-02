@@ -1,7 +1,9 @@
 enum QuoteEvent: Equatable, Sendable {
   case quote(Quote)
-  /// Whether the provider can currently reach its data source.
-  case connection(Bool)
+  /// The provider is receiving data from its source.
+  case online
+  /// The source is unreachable; `hint` tells the user what to do when the cause is known.
+  case offline(hint: String?)
 }
 
 protocol QuoteProvider: Sendable {

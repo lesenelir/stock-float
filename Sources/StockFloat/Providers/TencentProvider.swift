@@ -11,12 +11,12 @@ struct TencentProvider: QuoteProvider {
         while !Task.isCancelled {
           do {
             let quotes = try await fetch(symbols)
-            continuation.yield(.connection(true))
+            continuation.yield(.online)
             for quote in quotes {
               continuation.yield(.quote(quote))
             }
           } catch {
-            continuation.yield(.connection(false))
+            continuation.yield(.offline(hint: nil))
           }
           try? await Task.sleep(for: .seconds(pollSeconds))
         }

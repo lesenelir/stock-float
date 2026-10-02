@@ -8,7 +8,9 @@ struct Config: Codable, Equatable, Sendable {
 
   /// `StockSymbol.id` values, in display order.
   var symbols = ["usAAPL", "usNVDA", "usTSLA"]
-  /// Empty means US quotes fall back to the Tencent feed.
+  /// Take US quotes from the Longbridge CLI, which adds pre-market, post-market and overnight prices.
+  var longbridge = false
+  /// Used for US quotes when Longbridge is off; empty falls back to the Tencent feed.
   var finnhubKey = ""
   var pollSeconds = 3.0
   var upColor = UpColor.green
@@ -22,6 +24,7 @@ struct Config: Codable, Equatable, Sendable {
     symbols =
       try container.decodeIfPresent([String].self, forKey: .symbols).map { Self.parseSymbols($0).ids }
       ?? defaults.symbols
+    longbridge = try container.decodeIfPresent(Bool.self, forKey: .longbridge) ?? defaults.longbridge
     finnhubKey = try container.decodeIfPresent(String.self, forKey: .finnhubKey) ?? defaults.finnhubKey
     pollSeconds = max(1, try container.decodeIfPresent(Double.self, forKey: .pollSeconds) ?? defaults.pollSeconds)
     upColor = try container.decodeIfPresent(UpColor.self, forKey: .upColor) ?? defaults.upColor

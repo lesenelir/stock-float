@@ -55,13 +55,37 @@ struct Quote: Equatable, Sendable {
   /// `StockSymbol.id` of the instrument.
   let symbol: String
   var name: String
+  /// Last price of the regular session.
   var price: Double
   var prevClose: Double
+  /// Set while a pre-market, post-market or overnight price is newer than the regular one.
+  var extended: ExtendedQuote?
 
   /// Change against the previous close, in percent.
   var changePercent: Double {
-    prevClose > 0 ? (price / prevClose - 1) * 100 : 0
+    percentChange(of: price, from: prevClose)
   }
+}
+
+/// A price from outside the regular session.
+struct ExtendedQuote: Equatable, Sendable {
+  enum Session: String, CaseIterable, Sendable {
+    case pre, post, overnight
+  }
+
+  let session: Session
+  var price: Double
+  /// The close this session's change is measured against.
+  var prevClose: Double
+
+  /// Change against `prevClose`, in percent.
+  var changePercent: Double {
+    percentChange(of: price, from: prevClose)
+  }
+}
+
+private func percentChange(of price: Double, from base: Double) -> Double {
+  base > 0 ? (price / base - 1) * 100 : 0
 }
 
 private extension Character {

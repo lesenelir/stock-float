@@ -2,8 +2,9 @@ import SwiftUI
 
 struct SettingsView: View {
   @State var symbolsText: String
+  @State var longbridge: Bool
   @State var finnhubKey: String
-  let onSave: (_ symbols: [String], _ finnhubKey: String) -> Void
+  let onSave: (_ symbols: [String], _ longbridge: Bool, _ finnhubKey: String) -> Void
   let onCancel: () -> Void
 
   @State private var invalid: [String] = []
@@ -26,9 +27,16 @@ struct SettingsView: View {
         }
       }
       VStack(alignment: .leading, spacing: 4) {
+        Toggle("美股使用长桥行情（含盘前、盘后、夜盘）", isOn: $longbridge)
+        Text("需先安装长桥 CLI，并在终端运行 longbridge auth login")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      VStack(alignment: .leading, spacing: 4) {
         Text("Finnhub API key")
         TextField("留空则美股使用腾讯行情（约 20 秒一次快照）", text: $finnhubKey)
           .textFieldStyle(.roundedBorder)
+          .disabled(longbridge)
       }
       HStack {
         Spacer()
@@ -47,6 +55,6 @@ struct SettingsView: View {
     let parsed = Config.parseSymbols(entries)
     invalid = parsed.invalid
     guard invalid.isEmpty else { return }
-    onSave(parsed.ids, finnhubKey.trimmingCharacters(in: .whitespacesAndNewlines))
+    onSave(parsed.ids, longbridge, finnhubKey.trimmingCharacters(in: .whitespacesAndNewlines))
   }
 }

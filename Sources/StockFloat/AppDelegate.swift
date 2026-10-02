@@ -92,10 +92,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     settingsWindow?.close()
     let view = SettingsView(
       symbolsText: store.config.symbols.map(Self.editableText).joined(separator: "\n"),
+      longbridge: store.config.longbridge,
       finnhubKey: store.config.finnhubKey,
-      onSave: { [weak self] symbols, finnhubKey in
+      onSave: { [weak self] symbols, longbridge, finnhubKey in
         self?.store.update {
           $0.symbols = symbols
+          $0.longbridge = longbridge
           $0.finnhubKey = finnhubKey
         }
         self?.settingsWindow?.close()

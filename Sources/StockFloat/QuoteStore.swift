@@ -7,8 +7,8 @@ import Observation
 final class QuoteStore {
   private(set) var config: Config
   private(set) var quotes: [String: Quote] = [:]
-  /// Names of the data sources that are currently unreachable.
-  private(set) var offlineSources: Set<String> = []
+  /// Data sources that are currently unreachable, with a hint for the user when the cause is known (else empty).
+  private(set) var offlineSources: [String: String] = [:]
 
   @ObservationIgnored private var tasks: [Task<Void, Never>] = []
 
@@ -20,12 +20,17 @@ final class QuoteStore {
   func start() {
     tasks.forEach { $0.cancel() }
     tasks = []
-    offlineSources = []
-    quotes = quotes.filter { config.symbols.contains($0.key) }
+    offlineSources = [:]
+    // Dropping the old quotes keeps a stale extended-hours line from outliving a change of data source.
+    quotes = [:]
 
     var symbols = config.symbols.compactMap(StockSymbol.init(id:))
-    if !config.finnhubKey.isEmpty {
-      run(FinnhubProvider(apiKey: config.finnhubKey), named: "Finnhub", for: symbols.filter { $0.market == .us })
+    let usSymbols = symbols.filter { $0.market == .us }
+    if config.longbridge {
+      run(LongbridgeProvider(), named: "Longbridge", for: usSymbols)
+      symbols.removeAll { $0.market == .us }
+    } else if !config.finnhubKey.isEmpty {
+      run(FinnhubProvider(apiKey: config.finnhubKey), named: "Finnhub", for: usSymbols)
       symbols.removeAll { $0.market == .us }
     }
     run(TencentProvider(pollSeconds: config.pollSeconds), named: "Tencent", for: symbols)
@@ -38,6 +43,7 @@ final class QuoteStore {
     guard updated != config else { return }
     let feedsChanged =
       updated.symbols != config.symbols
+      || updated.longbridge != config.longbridge
       || updated.finnhubKey != config.finnhubKey
       || updated.pollSeconds != config.pollSeconds
     config = updated
@@ -62,10 +68,10 @@ final class QuoteStore {
     switch event {
     case .quote(let quote):
       quotes[quote.symbol] = quote
-    case .connection(true):
-      offlineSources.remove(source)
-    case .connection(false):
-      offlineSources.insert(source)
+    case .online:
+      offlineSources[source] = nil
+    case .offline(let hint):
+      offlineSources[source] = hint ?? ""
     }
   }
 }

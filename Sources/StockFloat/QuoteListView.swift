@@ -14,10 +14,11 @@ struct QuoteListView: View {
         Text("右键添加标的")
           .foregroundStyle(.secondary)
       }
-      if !store.offlineSources.isEmpty {
-        Text("连接中断，价格可能已过期")
+      ForEach(outageMessages, id: \.self) { message in
+        Text(message)
           .font(.system(size: 10))
           .foregroundStyle(.orange)
+          .fixedSize(horizontal: false, vertical: true)
           .padding(.horizontal, 4)
       }
     }
@@ -26,6 +27,10 @@ struct QuoteListView: View {
     .frame(width: 204)
     .fixedSize()
     .onGeometryChange(for: CGSize.self) { $0.size } action: { onResize($0) }
+  }
+
+  private var outageMessages: [String] {
+    Set(store.offlineSources.values.map { $0.isEmpty ? "连接中断，价格可能已过期" : $0 }).sorted()
   }
 }
 
@@ -38,16 +43,33 @@ private struct QuoteRow: View {
   @State private var flashCount = 0
 
   var body: some View {
-    HStack(spacing: 8) {
-      Text(label)
-        .lineLimit(1)
-        .frame(maxWidth: .infinity, alignment: .leading)
-      Text(priceText)
-        .monospacedDigit()
-      Text(percentText)
-        .monospacedDigit()
-        .foregroundStyle(color(for: quote?.changePercent ?? 0))
-        .frame(width: 56, alignment: .trailing)
+    VStack(spacing: 1) {
+      HStack(spacing: 8) {
+        Text(label)
+          .lineLimit(1)
+          .frame(maxWidth: .infinity, alignment: .leading)
+        Text(quote.map { priceText($0.price) } ?? "—")
+          .monospacedDigit()
+        Text(quote.map { percentText($0.changePercent) } ?? "—")
+          .monospacedDigit()
+          .foregroundStyle(color(for: quote?.changePercent ?? 0))
+          .frame(width: 56, alignment: .trailing)
+      }
+      if let extended = quote?.extended {
+        HStack(spacing: 8) {
+          Text(sessionLabel(extended.session))
+            .frame(maxWidth: .infinity, alignment: .leading)
+          Text(priceText(extended.price))
+            .monospacedDigit()
+          Text(percentText(extended.changePercent))
+            .monospacedDigit()
+            .foregroundStyle(color(for: extended.changePercent))
+            .frame(width: 56, alignment: .trailing)
+        }
+        .font(.system(size: 10, weight: .medium))
+        .foregroundStyle(.secondary)
+        .padding(.leading, 8)
+      }
     }
     .padding(.horizontal, 4)
     .padding(.vertical, 2)
@@ -60,7 +82,7 @@ private struct QuoteRow: View {
           opacity > 0 ? .easeOut(duration: 0.1) : .easeOut(duration: 0.6)
         }
     }
-    .onChange(of: quote?.price) { old, new in
+    .onChange(of: quote?.extended?.price ?? quote?.price) { old, new in
       guard let old, let new, old != new else { return }
       flashColor = color(for: new - old)
       flashCount += 1
@@ -76,14 +98,20 @@ private struct QuoteRow: View {
     return quote?.name ?? parsed.code
   }
 
-  private var priceText: String {
-    guard let quote else { return "—" }
-    return String(format: quote.price < 1 ? "%.3f" : "%.2f", quote.price)
+  private func sessionLabel(_ session: ExtendedQuote.Session) -> String {
+    switch session {
+    case .pre: "盘前"
+    case .post: "盘后"
+    case .overnight: "夜盘"
+    }
   }
 
-  private var percentText: String {
-    guard let quote else { return "—" }
-    return String(format: "%+.2f%%", quote.changePercent)
+  private func priceText(_ price: Double) -> String {
+    String(format: price < 1 ? "%.3f" : "%.2f", price)
+  }
+
+  private func percentText(_ percent: Double) -> String {
+    String(format: "%+.2f%%", percent)
   }
 
   private func color(for change: Double) -> Color {
