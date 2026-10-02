@@ -33,10 +33,8 @@ final class FloatingPanel: NSPanel {
     background.material = .hudWindow
     background.blendingMode = .behindWindow
     background.state = .active
-    background.wantsLayer = true
-    background.layer?.cornerRadius = 10
-    background.layer?.cornerCurve = .continuous
-    background.layer?.masksToBounds = true
+    // A layer corner radius does not clip the behind-window material, which leaves square corners showing.
+    background.maskImage = Self.roundedMask(radius: 10)
 
     let hosting = NSHostingView(rootView: rootView)
     hosting.sizingOptions = []
@@ -47,6 +45,19 @@ final class FloatingPanel: NSPanel {
 
     NotificationCenter.default.addObserver(
       self, selector: #selector(didMove), name: NSWindow.didMoveNotification, object: self)
+  }
+
+  /// A rounded rectangle that stretches to any size while keeping its corners.
+  private static func roundedMask(radius: CGFloat) -> NSImage {
+    let edge = radius * 2 + 1
+    let image = NSImage(size: NSSize(width: edge, height: edge), flipped: false) { rect in
+      NSColor.black.setFill()
+      NSBezierPath(roundedRect: rect, xRadius: radius, yRadius: radius).fill()
+      return true
+    }
+    image.capInsets = NSEdgeInsets(top: radius, left: radius, bottom: radius, right: radius)
+    image.resizingMode = .stretch
+    return image
   }
 
   /// Resize around the content, keeping the top-left corner where it is.
