@@ -68,6 +68,8 @@ Right-click the panel for the menu:
 
 Drag the panel to move it; the position is remembered.
 
+For US stocks, a second line appears outside the regular session: a sun icon for pre-market, a sunset for post-market and a moon for the overnight session, followed by that session's price and its change against the regular close.
+
 A row fades when its price has not updated for 30 minutes, which is what a closed market, a lunch break or a lost connection all look like.
 
 ### Symbols

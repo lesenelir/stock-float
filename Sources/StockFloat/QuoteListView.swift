@@ -65,7 +65,9 @@ private struct QuoteRow: View {
       }
       if let extended = quote?.extended {
         HStack(spacing: 8) {
-          Text(strings.session(extended.session))
+          Image(systemName: extended.session.symbolName)
+            .font(.system(size: 10 * scale))
+            .accessibilityLabel(strings.session(extended.session))
             .frame(maxWidth: .infinity, alignment: .leading)
           Text(priceText(extended.price))
             .monospacedDigit()

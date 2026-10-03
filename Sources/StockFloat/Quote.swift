@@ -82,6 +82,16 @@ struct Quote: Equatable, Sendable {
 struct ExtendedQuote: Equatable, Sendable {
   enum Session: String, CaseIterable, Sendable {
     case pre, post, overnight
+
+    /// SF Symbol for the row label: the time of day each session falls in. A full sun rather than a sunrise,
+    /// which at label size is indistinguishable from a sunset.
+    var symbolName: String {
+      switch self {
+      case .pre: "sun.max.fill"
+      case .post: "sunset.fill"
+      case .overnight: "moon.stars.fill"
+      }
+    }
   }
 
   let session: Session

@@ -1,4 +1,4 @@
-import Foundation
+import AppKit
 import Testing
 
 @testable import StockFloat
@@ -16,4 +16,9 @@ import Testing
   let quote = Quote(symbol: "usAAPL", name: "AAPL", price: 333, prevClose: 330)
 
   #expect(!quote.isStale(at: .distantFuture))
+}
+
+@Test(arguments: ExtendedQuote.Session.allCases)
+func everySessionHasASystemSymbol(session: ExtendedQuote.Session) {
+  #expect(NSImage(systemSymbolName: session.symbolName, accessibilityDescription: nil) != nil)
 }
