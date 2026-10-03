@@ -51,35 +51,42 @@ private struct QuoteRow: View {
   @State private var flashCount = 0
 
   var body: some View {
-    VStack(spacing: 1) {
-      HStack(spacing: 8) {
-        Text(label)
-          .lineLimit(1)
-          .frame(maxWidth: .infinity, alignment: .leading)
-        Text(quote.map { priceText($0.price) } ?? "—")
-          .monospacedDigit()
-        Text(quote.map { percentText($0.changePercent) } ?? "—")
-          .monospacedDigit()
-          .foregroundStyle(tint(for: quote?.changePercent ?? 0, otherwise: .primary))
-          .frame(width: 56 * scale, alignment: .trailing)
-      }
-      if let extended = quote?.extended {
+    // The name sits on the first line; the extended-hours line hangs under the price column only.
+    HStack(alignment: .firstTextBaseline, spacing: 8) {
+      Text(label)
+        .lineLimit(1)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      VStack(alignment: .trailing, spacing: 1) {
         HStack(spacing: 8) {
-          Image(systemName: extended.session.symbolName)
-            .font(.system(size: 10 * scale))
-            .accessibilityLabel(strings.session(extended.session))
-            .frame(maxWidth: .infinity, alignment: .leading)
-          Text(priceText(extended.price))
+          Text(quote.map { priceText($0.price) } ?? "—")
             .monospacedDigit()
-          Text(percentText(extended.changePercent))
+          Text(quote.map { percentText($0.changePercent) } ?? "—")
             .monospacedDigit()
-            .foregroundStyle(tint(for: extended.changePercent, otherwise: .secondary))
+            .foregroundStyle(tint(for: quote?.changePercent ?? 0, otherwise: .primary))
             .frame(width: 56 * scale, alignment: .trailing)
         }
-        .font(.system(size: 10 * scale, weight: .medium))
-        .foregroundStyle(.secondary)
-        .padding(.leading, 8)
+        if let extended = quote?.extended {
+          HStack(spacing: 8) {
+            // The icon hugs the price it labels.
+            HStack(spacing: 3) {
+              Image(systemName: extended.session.symbolName)
+                // A little smaller than the digits: a label, not a third number.
+                .font(.system(size: 8.5 * scale))
+                .accessibilityLabel(strings.session(extended.session))
+              Text(priceText(extended.price))
+                .monospacedDigit()
+            }
+            Text(percentText(extended.changePercent))
+              .monospacedDigit()
+              .foregroundStyle(tint(for: extended.changePercent, otherwise: .secondary))
+              .frame(width: 56 * scale, alignment: .trailing)
+          }
+          .font(.system(size: 10 * scale, weight: .medium))
+          .foregroundStyle(.secondary)
+        }
       }
+      // Prices never wrap; the name is what gives way when the panel is tight.
+      .fixedSize()
     }
     .padding(.horizontal, 4)
     .padding(.vertical, 2)
@@ -127,3 +134,4 @@ private struct QuoteRow: View {
     return (change > 0) == (upColor == .green) ? .green : .red
   }
 }
+
