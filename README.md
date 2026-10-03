@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="StockFloat"></p>
+
 # StockFloat
 
 [中文](README.zh-CN.md)
@@ -113,6 +115,8 @@ swift test
 ./scripts/bundle.sh             # build/StockFloat.app for this Mac
 ./scripts/bundle.sh --universal # Apple silicon and Intel
 ```
+
+The icon is built from `Resources/icon-source.png` by `scripts/make-icon.swift`; rerun it after changing the artwork.
 
 To publish a release, tag a version; GitHub Actions builds the universal app and attaches it to the release:
 

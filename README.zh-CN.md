@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="StockFloat"></p>
+
 # StockFloat
 
 [English](README.md)
@@ -113,6 +115,8 @@ swift test
 ./scripts/bundle.sh             # 为本机构建 build/StockFloat.app
 ./scripts/bundle.sh --universal # 同时支持 Apple 芯片和 Intel
 ```
+
+图标由 `scripts/make-icon.swift` 从 `Resources/icon-source.png` 生成，换图后重新运行即可。
 
 发布新版本时给版本打 tag，GitHub Actions 会构建通用版本并附到 release 上：
 

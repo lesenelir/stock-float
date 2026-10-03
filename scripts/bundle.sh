@@ -16,8 +16,9 @@ BIN_PATH=$(swift build -c release $ARCHS --show-bin-path)
 
 APP=build/StockFloat.app
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_PATH/StockFloat" "$APP/Contents/MacOS/StockFloat"
+cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 cat > "$APP/Contents/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -26,6 +27,8 @@ cat > "$APP/Contents/Info.plist" <<EOF
 <dict>
   <key>CFBundleExecutable</key>
   <string>StockFloat</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>com.lesenelir.stockfloat</string>
   <key>CFBundleName</key>
