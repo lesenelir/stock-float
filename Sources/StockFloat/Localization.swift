@@ -55,6 +55,8 @@ struct Strings: Equatable, Sendable {
 
   var settings: String { t("设置…", "Settings…") }
   var hidePanel: String { t("隐藏小窗", "Hide Panel") }
+  var showPanel: String { t("显示小窗", "Show Panel") }
+  var dockIcon: String { t("在 Dock 中显示图标", "Show in Dock") }
   var appearance: String { t("外观", "Appearance") }
   var colors: String { t("配色", "Colors") }
   var textSize: String { t("字号", "Text Size") }

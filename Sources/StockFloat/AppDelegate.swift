@@ -3,9 +3,10 @@ import ServiceManagement
 import SwiftUI
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let store = QuoteStore(config: .load())
   private var panel: FloatingPanel?
+  private var statusItem: NSStatusItem?
   private var settingsWindow: NSWindow?
   private var modifierTimer: Timer?
   private var hotkey: GlobalHotkey?
@@ -13,7 +14,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   private static let positionKey = "panelTopLeft"
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    // The bundle is marked as a background app so a user who turned the Dock icon off never sees it flash.
+    NSApp.setActivationPolicy(store.config.dockIcon ? .regular : .accessory)
     NSApp.mainMenu = makeMainMenu()
+
+    let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+    statusItem.button?.image = NSImage(
+      systemSymbolName: "chart.line.uptrend.xyaxis", accessibilityDescription: "StockFloat")
+    let statusMenu = NSMenu()
+    statusMenu.delegate = self
+    statusItem.menu = statusMenu
+    self.statusItem = statusItem
 
     let panel = FloatingPanel(
       rootView: QuoteListView(store: store) { [weak self] size in
@@ -33,18 +44,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     store.start()
   }
 
-  // With no Dock or menu bar item, opening the app again is the way back to a hidden panel.
+  // Opening the app again, from the Dock, Spotlight or Finder, brings a hidden panel back.
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
     panel?.orderFrontRegardless()
     return false
   }
 
+  func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+    let menu = NSMenu()
+    menu.addItem(item(store.strings.settings, #selector(openSettings)))
+    menu.addItem(panelItem())
+    return menu
+  }
+
+  /// The menu bar icon's menu is rebuilt each time it opens, so its check marks are current.
+  func menuNeedsUpdate(_ menu: NSMenu) {
+    menu.removeAllItems()
+    populate(menu)
+  }
+
   // MARK: Menus
 
-  // An accessory app shows no menu bar, but text fields still need these items for ⌘C / ⌘V / ⌘W to work.
+  // Shown when the app is active; without the Dock icon it is never visible, but text fields still need the
+  // Edit items for ⌘C / ⌘V / ⌘W to work.
   private func makeMainMenu() -> NSMenu {
     let strings = store.strings
     let appMenu = NSMenu()
+    appMenu.addItem(item(strings.settings, #selector(openSettings)))
+    appMenu.addItem(item(strings.showPanel, #selector(showPanel)))
+    appMenu.addItem(.separator())
     appMenu.addItem(withTitle: strings.quitApp, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
 
     let editMenu = NSMenu(title: strings.edit)
@@ -68,16 +96,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
   }
 
   private func makeContextMenu() -> NSMenu {
-    let strings = store.strings
     let menu = NSMenu()
+    populate(menu)
+    return menu
+  }
+
+  /// The one menu behind the panel's right-click and the menu bar icon.
+  // Grouped by kind: the two everyday actions, the two submenus, then the three behaviour toggles by how often
+  // they change.
+  private func populate(_ menu: NSMenu) {
+    let strings = store.strings
     menu.addItem(item(strings.settings, #selector(openSettings)))
-    let hideItem = item(strings.hidePanel, #selector(togglePanel))
-    // Shown only when the shortcut is actually registered, so the menu never advertises a dead key.
-    if hotkey != nil, let spec = HotkeySpec(store.config.hotkey) {
-      hideItem.keyEquivalent = spec.key
-      hideItem.keyEquivalentModifierMask = spec.modifiers
-    }
-    menu.addItem(hideItem)
+    menu.addItem(panelItem())
     menu.addItem(.separator())
 
     let appearanceMenu = NSMenu()
@@ -102,17 +132,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     appearanceItem.submenu = appearanceMenu
     menu.addItem(appearanceItem)
 
-    menu.addItem(item(strings.clickThrough, #selector(toggleClickThrough), checked: store.config.clickThrough))
-
-    let loginItem = item(
-      strings.launchAtLogin, #selector(toggleLaunchAtLogin),
-      checked: canLaunchAtLogin && SMAppService.mainApp.status == .enabled)
-    if !canLaunchAtLogin {
-      loginItem.action = nil
-      loginItem.toolTip = strings.launchAtLoginUnavailable
-    }
-    menu.addItem(loginItem)
-
     let languageMenu = NSMenu()
     for setting in LanguageSetting.allCases {
       languageMenu.addItem(
@@ -123,10 +142,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let languageItem = NSMenuItem(title: strings.languageMenu, action: nil, keyEquivalent: "")
     languageItem.submenu = languageMenu
     menu.addItem(languageItem)
-
     menu.addItem(.separator())
+
+    menu.addItem(item(strings.clickThrough, #selector(toggleClickThrough), checked: store.config.clickThrough))
+    menu.addItem(item(strings.dockIcon, #selector(toggleDockIcon), checked: store.config.dockIcon))
+    let loginItem = item(
+      strings.launchAtLogin, #selector(toggleLaunchAtLogin),
+      checked: canLaunchAtLogin && SMAppService.mainApp.status == .enabled)
+    if !canLaunchAtLogin {
+      loginItem.action = nil
+      loginItem.toolTip = strings.launchAtLoginUnavailable
+    }
+    menu.addItem(loginItem)
+    menu.addItem(.separator())
+
     menu.addItem(withTitle: strings.quit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "")
-    return menu
+  }
+
+  /// "Show Panel" or "Hide Panel", whichever applies now, with the shortcut shown only when it is registered.
+  private func panelItem() -> NSMenuItem {
+    let visible = panel?.isVisible == true
+    let item = item(visible ? store.strings.hidePanel : store.strings.showPanel, #selector(togglePanel))
+    if hotkey != nil, let spec = HotkeySpec(store.config.hotkey) {
+      item.keyEquivalent = spec.key
+      item.keyEquivalentModifierMask = spec.modifiers
+    }
+    return item
   }
 
   private func item(_ title: String, _ action: Selector, checked: Bool = false) -> NSMenuItem {
@@ -185,6 +226,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     } else {
       panel.orderFrontRegardless()
     }
+  }
+
+  @objc private func showPanel() {
+    panel?.orderFrontRegardless()
+  }
+
+  @objc private func toggleDockIcon() {
+    store.update { $0.dockIcon.toggle() }
+    NSApp.setActivationPolicy(store.config.dockIcon ? .regular : .accessory)
   }
 
   private func registerHotkey() {

@@ -43,6 +43,13 @@ func resolvesTheLanguage(setting: LanguageSetting, preferred: [String], language
   #expect(Strings(language: .en).unrecognized(["a b", "苹果"]) == "Not recognized: a b, 苹果")
 }
 
+@Test func namesThePanelAndDockItems() {
+  #expect(Strings(language: .zh).showPanel == "显示小窗")
+  #expect(Strings(language: .en).showPanel == "Show Panel")
+  #expect(Strings(language: .zh).dockIcon == "在 Dock 中显示图标")
+  #expect(Strings(language: .en).dockIcon == "Show in Dock")
+}
+
 @Test func namesTheAppearanceChoices() {
   let zh = Strings(language: .zh)
   let en = Strings(language: .en)

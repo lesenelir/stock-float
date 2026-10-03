@@ -38,6 +38,8 @@ struct Config: Codable, Equatable, Sendable {
   var textSize = TextSize.small
   /// Opacity of the whole panel, 0.3 to 1.
   var opacity = 1.0
+  /// Show the app in the Dock (and the ⌘Tab switcher); the menu bar icon is always there.
+  var dockIcon = true
 
   init() {}
 
@@ -56,6 +58,7 @@ struct Config: Codable, Equatable, Sendable {
     hotkey = try container.decodeIfPresent(String.self, forKey: .hotkey) ?? defaults.hotkey
     textSize = try container.decodeIfPresent(TextSize.self, forKey: .textSize) ?? defaults.textSize
     opacity = min(1, max(0.3, try container.decodeIfPresent(Double.self, forKey: .opacity) ?? defaults.opacity))
+    dockIcon = try container.decodeIfPresent(Bool.self, forKey: .dockIcon) ?? defaults.dockIcon
   }
 
   /// Normalize user-entered symbols, dropping duplicates; `invalid` lists the entries that could not be read.

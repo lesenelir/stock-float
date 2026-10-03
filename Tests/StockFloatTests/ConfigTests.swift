@@ -41,6 +41,7 @@ func rejectsUnreadableSymbols(input: String) {
   #expect(config.hotkey == "ctrl+opt+s")
   #expect(config.textSize == .small)
   #expect(config.opacity == 1)
+  #expect(config.dockIcon)
 }
 
 @Test(arguments: [("green", Config.UpColor.green), ("red", .red), ("mono", .mono)])
@@ -68,6 +69,7 @@ func keepsOpacityInRange(stored: Double, opacity: Double) throws {
   config.hotkey = "cmd+shift+9"
   config.textSize = .large
   config.opacity = 0.7
+  config.dockIcon = false
 
   try config.save(to: url)
 

@@ -57,14 +57,15 @@ You only need to do this once per download.
 
 ## Use
 
-Right-click the panel for the menu:
+StockFloat shows a line-chart icon in the menu bar and, by default, an icon in the Dock. Click either, or right-click the panel, for the menu:
 
 - **Settings…** edits the watch list and data sources.
-- **Hide Panel** hides it. Press **⌃⌥S** in any app to hide or show it; opening StockFloat again also brings it back.
+- **Hide Panel** / **Show Panel**. Press **⌃⌥S** in any app to do the same; clicking the Dock icon or opening StockFloat again also brings a hidden panel back.
 - **Appearance** sets the colors (green up, red up, or no color), the text size and the opacity.
-- **Click-through** lets clicks pass through the panel; hold ⌥ to interact with it again.
-- **Launch at login**
 - **Language** switches between System, 中文 and English.
+- **Click-through** lets clicks pass through the panel; hold ⌥ to interact with it again.
+- **Show in Dock** turns the Dock icon off or on; the menu bar icon stays either way.
+- **Launch at login**
 
 Drag the panel to move it; the position is remembered.
 
