@@ -99,8 +99,9 @@ private struct QuoteRow: View {
           opacity > 0 ? .easeOut(duration: 0.1) : .easeOut(duration: 0.6)
         }
     }
-    .onChange(of: quote?.extended?.price ?? quote?.price) { old, new in
-      guard let old, let new, old != new else { return }
+    // Only regular-session moves flash; extended-hours ticks update quietly.
+    .onChange(of: quote?.price) { old, new in
+      guard quote?.extended == nil, let old, let new, old != new else { return }
       flashColor = tint(for: new - old, otherwise: .gray)
       flashCount += 1
     }
