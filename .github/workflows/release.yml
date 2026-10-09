@@ -52,11 +52,43 @@ jobs:
           ZIP: ${{ steps.package.outputs.zip }}
           SHA: ${{ steps.package.outputs.sha }}
         run: |
+          # Unquoted so $VERSION and $SHA expand; backticks are escaped for the same reason.
+          cat > notes.md <<EOF
+          Universal build for Apple silicon and Intel, macOS 14 or later.
+
+          ## First launch
+
+          StockFloat is not notarized by Apple, so the first time you open it macOS says Apple could not verify it is free of malware. To allow it:
+
+          1. Move \`StockFloat.app\` to Applications, open it once, and click **Done** on the warning (not **Move to Trash**).
+          2. Open **System Settings → Privacy & Security**, scroll to **Security**, click **Open Anyway** next to the StockFloat message, and confirm with your password.
+
+          Or remove the download flag in Terminal:
+
+          \`\`\`sh
+          xattr -dr com.apple.quarantine /Applications/StockFloat.app
+          \`\`\`
+
+          This is needed once per download. Updates installed from the app's menu (0.2.4 and later) skip it.
+
+          ## 首次打开
+
+          StockFloat 没有经过 Apple 公证，第一次打开时 macOS 会提示 Apple 无法验证它不含恶意软件。放行方法：
+
+          1. 把 \`StockFloat.app\` 拖进「应用程序」，打开一次，在警告里点**完成**（不要点**移到废纸篓**）。
+          2. 打开**系统设置 → 隐私与安全性**，滚动到**安全性**，在 StockFloat 那条提示旁点**仍要打开**，输入密码确认。
+
+          或者在终端里去掉下载标记：
+
+          \`\`\`sh
+          xattr -dr com.apple.quarantine /Applications/StockFloat.app
+          \`\`\`
+
+          每次从网页下载只需要做一次。在 app 菜单里安装的更新（0.2.4 起）不需要。
+
+          SHA-256 of \`StockFloat-$VERSION.zip\`: \`$SHA\`
+          EOF
           gh release create "$GITHUB_REF_NAME" "$ZIP" \
             --title "StockFloat $VERSION" \
             --generate-notes \
-            --notes "Universal build for Apple silicon and Intel, macOS 14 or later.
-
-          The app is not notarized, so macOS blocks the first launch. See \"First launch\" in the README.
-
-          SHA-256 of \`StockFloat-$VERSION.zip\`: \`$SHA\`"
+            --notes-file notes.md
