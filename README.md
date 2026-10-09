@@ -55,6 +55,10 @@ xattr -dr com.apple.quarantine /Applications/StockFloat.app
 
 You only need to do this once per download.
 
+### Updates
+
+StockFloat checks GitHub for a new release once a day. When one is out, the panel says so and the menu offers **Update to x.y.z**, which downloads it, replaces the app and relaunches it. Updates installed this way need no second approval. If the app cannot replace itself, for example when your account cannot write to Applications, the menu item opens the release page instead.
+
 ## Use
 
 StockFloat shows a line-chart icon in the menu bar and, by default, an icon in the Dock. Click either, or right-click the panel, for the menu:

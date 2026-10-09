@@ -2,6 +2,7 @@ import SwiftUI
 
 struct QuoteListView: View {
   let store: QuoteStore
+  let updater: Updater
   /// Reports the content size so the panel can resize around it.
   let onResize: (CGSize) -> Void
 
@@ -23,6 +24,14 @@ struct QuoteListView: View {
           Text(message)
             .font(.system(size: 10 * scale))
             .foregroundStyle(.orange)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 4)
+        }
+        // Quiet on purpose: the panel is on screen all day.
+        if let release = updater.available {
+          Text(store.strings.updateHint(release.versionText))
+            .font(.system(size: 10 * scale))
+            .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, 4)
         }

@@ -51,8 +51,16 @@ struct Strings: Equatable, Sendable {
     }
   }
 
+  func updateHint(_ version: String) -> String {
+    t("新版本 \(version) 可用，右键更新", "Version \(version) available. Right-click to update.")
+  }
+
   // MARK: Context menu
 
+  func updateTo(_ version: String) -> String { t("更新到 \(version)", "Update to \(version)") }
+  var updating: String { t("正在下载更新…", "Downloading Update…") }
+  var updateFailed: String { t("更新失败", "Update Failed") }
+  var openDownloadPage: String { t("打开下载页面", "Open Download Page") }
   var settings: String { t("设置…", "Settings…") }
   var hidePanel: String { t("隐藏小窗", "Hide Panel") }
   var showPanel: String { t("显示小窗", "Show Panel") }

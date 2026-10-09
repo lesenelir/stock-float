@@ -5,6 +5,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let store = QuoteStore(config: .load())
+  private let updater = Updater()
   private var panel: FloatingPanel?
   private var statusItem: NSStatusItem?
   private var settingsWindow: NSWindow?
@@ -27,7 +28,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     self.statusItem = statusItem
 
     let panel = FloatingPanel(
-      rootView: QuoteListView(store: store) { [weak self] size in
+      rootView: QuoteListView(store: store, updater: updater) { [weak self] size in
         self?.panel?.resize(to: size)
       })
     self.panel = panel
@@ -42,6 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     applyClickThrough()
     registerHotkey()
     store.start()
+    updater.start()
   }
 
   // Opening the app again, from the Dock, Spotlight or Finder, brings a hidden panel back.
@@ -102,10 +104,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   /// The one menu behind the panel's right-click and the menu bar icon.
-  // Grouped by kind: the two everyday actions, the two submenus, then the three behaviour toggles by how often
-  // they change.
+  // Grouped by kind: a pending update, the two everyday actions, the two submenus, then the three behaviour toggles
+  // by how often they change.
   private func populate(_ menu: NSMenu) {
     let strings = store.strings
+    switch updater.state {
+    case .available(let release):
+      menu.addItem(item(strings.updateTo(release.versionText), #selector(installUpdate)))
+      menu.addItem(.separator())
+    case .installing:
+      menu.addItem(withTitle: strings.updating, action: nil, keyEquivalent: "")
+      menu.addItem(.separator())
+    case .idle:
+      break
+    }
     menu.addItem(item(strings.settings, #selector(openSettings)))
     menu.addItem(panelItem())
     menu.addItem(.separator())
@@ -185,6 +197,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   // MARK: Actions
+
+  @objc private func installUpdate() {
+    updater.install(strings: store.strings)
+  }
 
   @objc private func openSettings() {
     settingsWindow?.close()
