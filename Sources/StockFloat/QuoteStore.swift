@@ -11,9 +11,14 @@ final class QuoteStore {
   private(set) var offlineSources: [QuoteSource: Outage] = [:]
 
   @ObservationIgnored private var tasks: [Task<Void, Never>] = []
+  /// Where changes of the config are saved.
+  @ObservationIgnored private let configURL: URL
+  /// Told of the alerts a quote set off, which the store has already removed: each goes off once.
+  @ObservationIgnored var onAlert: ((Quote, [PriceAlert]) -> Void)?
 
-  init(config: Config) {
+  init(config: Config, savingTo configURL: URL = Config.fileURL) {
     self.config = config
+    self.configURL = configURL
   }
 
   /// The interface strings for the configured language.
@@ -52,7 +57,7 @@ final class QuoteStore {
       || updated.finnhubKey != config.finnhubKey
       || updated.pollSeconds != config.pollSeconds
     config = updated
-    try? updated.save()
+    try? updated.save(to: configURL)
     if feedsChanged {
       start()
     }
@@ -69,10 +74,15 @@ final class QuoteStore {
     tasks.append(task)
   }
 
-  private func apply(_ event: QuoteEvent, from source: QuoteSource) {
+  func apply(_ event: QuoteEvent, from source: QuoteSource) {
     switch event {
     case .quote(let quote):
       quotes[quote.symbol] = quote
+      let hits = config.alerts.filter { $0.symbol == quote.symbol && $0.isReached(by: quote.latest) }
+      if !hits.isEmpty {
+        update { $0.alerts.removeAll(where: hits.contains) }
+        onAlert?(quote, hits)
+      }
     case .online:
       offlineSources[source] = nil
     case .offline(let outage):

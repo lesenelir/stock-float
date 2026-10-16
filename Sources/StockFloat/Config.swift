@@ -40,6 +40,8 @@ struct Config: Codable, Equatable, Sendable {
   var opacity = 1.0
   /// Show the app in the Dock (and the ⌘Tab switcher); the menu bar icon is always there.
   var dockIcon = true
+  /// Price alerts waiting to go off, for symbols of the watch list.
+  var alerts: [PriceAlert] = []
 
   init() {}
 
@@ -59,6 +61,14 @@ struct Config: Codable, Equatable, Sendable {
     textSize = try container.decodeIfPresent(TextSize.self, forKey: .textSize) ?? defaults.textSize
     opacity = min(1, max(0.3, try container.decodeIfPresent(Double.self, forKey: .opacity) ?? defaults.opacity))
     dockIcon = try container.decodeIfPresent(Bool.self, forKey: .dockIcon) ?? defaults.dockIcon
+    // An alert that cannot be read is dropped, not the whole config.
+    alerts = ((try? container.decodeIfPresent([PriceAlert].self, forKey: .alerts)) ?? []).filter { $0.price > 0 }
+    dropOrphanAlerts()
+  }
+
+  /// Remove the alerts of symbols no longer watched, which no feed would set off.
+  mutating func dropOrphanAlerts() {
+    alerts.removeAll { !symbols.contains($0.symbol) }
   }
 
   /// Normalize user-entered symbols, dropping duplicates; `invalid` lists the entries that could not be read.
@@ -95,5 +105,27 @@ struct Config: Codable, Equatable, Sendable {
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
     try encoder.encode(self).write(to: url, options: .atomic)
+  }
+}
+
+/// Notifies once when a symbol's price reaches `price`, then goes away.
+struct PriceAlert: Codable, Hashable, Sendable {
+  /// `StockSymbol.id` of the instrument.
+  var symbol: String
+  var price: Double
+  /// Waits for the price to fall to `price`; otherwise for it to rise to it.
+  var below: Bool
+
+  /// Whether `latest` sets the alert off. Zero is no price.
+  func isReached(by latest: Double) -> Bool {
+    guard latest > 0 else { return false }
+    return below ? latest <= price : latest >= price
+  }
+
+  /// Read a price as typed, which must be above zero.
+  static func parsePrice(_ text: String) -> Double? {
+    let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: "")
+    guard let price = Double(cleaned), price > 0, price.isFinite else { return nil }
+    return price
   }
 }

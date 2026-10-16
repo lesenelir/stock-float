@@ -71,6 +71,11 @@ struct Quote: Equatable, Sendable {
     percentChange(of: price, from: prevClose)
   }
 
+  /// The newest price: the extended session's while it trades, the regular one's otherwise.
+  var latest: Double {
+    extended?.price ?? price
+  }
+
   /// Whether the price is old enough to be misleading; unknown times are not treated as stale.
   func isStale(at now: Date) -> Bool {
     guard let time else { return false }
@@ -102,6 +107,28 @@ struct ExtendedQuote: Equatable, Sendable {
   /// Change against `prevClose`, in percent.
   var changePercent: Double {
     percentChange(of: price, from: prevClose)
+  }
+}
+
+/// How the interface writes a symbol and its numbers: the panel, the alerts window and their notifications.
+enum Format {
+  /// US tickers are already short; other markets read better by name.
+  static func label(_ symbol: String, _ quote: Quote?) -> String {
+    guard let parsed = StockSymbol(id: symbol) else { return symbol }
+    if parsed.market == .us {
+      return parsed.code
+    }
+    return quote?.name ?? parsed.code
+  }
+
+  /// A price, with three decimals below 1, where cents are too coarse.
+  static func price(_ price: Double) -> String {
+    String(format: price < 1 ? "%.3f" : "%.2f", price)
+  }
+
+  /// A change in percent, always signed: +0.89%, -2.27%.
+  static func percent(_ percent: Double) -> String {
+    String(format: "%+.2f%%", percent)
   }
 }
 

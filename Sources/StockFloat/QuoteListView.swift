@@ -116,22 +116,11 @@ private struct QuoteRow: View {
     }
   }
 
-  // US tickers are already short; other markets read better by name.
-  private var label: String {
-    guard let parsed = StockSymbol(id: symbol) else { return symbol }
-    if parsed.market == .us {
-      return parsed.code
-    }
-    return quote?.name ?? parsed.code
-  }
+  private var label: String { Format.label(symbol, quote) }
 
-  private func priceText(_ price: Double) -> String {
-    String(format: price < 1 ? "%.3f" : "%.2f", price)
-  }
+  private func priceText(_ price: Double) -> String { Format.price(price) }
 
-  private func percentText(_ percent: Double) -> String {
-    String(format: "%+.2f%%", percent)
-  }
+  private func percentText(_ percent: Double) -> String { Format.percent(percent) }
 
   /// The gain or loss colour, or `plain` when the colour scheme is monochrome.
   private func tint(for change: Double, otherwise plain: Color) -> Color {

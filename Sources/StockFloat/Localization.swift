@@ -137,4 +137,47 @@ struct Strings: Equatable, Sendable {
   func unrecognized(_ entries: [String]) -> String {
     t("无法识别：\(entries.joined(separator: "、"))", "Not recognized: \(entries.joined(separator: ", "))")
   }
+
+  // MARK: Price alerts
+
+  var priceAlerts: String { t("到价提醒…", "Price Alerts…") }
+  var alertsTitle: String { t("到价提醒", "Price Alerts") }
+  var alertSymbol: String { t("标的", "Symbol") }
+  var alertPrice: String { t("目标价", "Target price") }
+  var alertDirection: String { t("方向", "Direction") }
+  var alertRises: String { t("涨到", "Rises to") }
+  var alertFalls: String { t("跌到", "Falls to") }
+  var addAlert: String { t("添加", "Add") }
+  var removeAlert: String { t("删除", "Remove") }
+  var done: String { t("完成", "Done") }
+  var invalidPrice: String { t("请输入大于 0 的价格", "Enter a price above 0.") }
+  var alertsNeedSymbols: String { t("请先在设置中添加标的", "Add symbols in Settings first.") }
+  var noAlerts: String {
+    t("暂无提醒。到价时会在系统通知中提醒一次。", "No alerts. Each one notifies you once, in Notification Center.")
+  }
+
+  /// The latest price of the symbol an alert is being set for.
+  func lastPrice(_ price: String) -> String { t("现价 \(price)", "Last \(price)") }
+
+  /// When an alert goes off, such as "Rises to 200.00".
+  func alertCondition(below: Bool, _ price: String) -> String {
+    "\(below ? alertFalls : alertRises) \(price)"
+  }
+
+  /// The notification of an alert going off, such as "AAPL rose to 200.00".
+  func alertTitle(_ label: String, below: Bool, _ price: String) -> String {
+    below ? t("\(label) 跌到 \(price)", "\(label) fell to \(price)") : t("\(label) 涨到 \(price)", "\(label) rose to \(price)")
+  }
+
+  /// The price that set an alert off and its change, such as "Now 201.30 (+2.15%)"; `session` names the extended
+  /// session it traded in.
+  func alertBody(session: ExtendedQuote.Session?, _ price: String, _ change: String) -> String {
+    let when = session.map(self.session) ?? t("现价", "Now")
+    return t("\(when) \(price)（\(change)）", "\(when) \(price) (\(change))")
+  }
+
+  var notificationsOff: String { t("到价提醒无法通知", "Price Alerts Can't Notify You") }
+  var notificationsOffDetail: String {
+    t("请在“系统设置 › 通知”中允许 StockFloat 发送通知。", "Allow StockFloat to send notifications in System Settings › Notifications.")
+  }
 }

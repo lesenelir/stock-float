@@ -6,9 +6,11 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   private let store = QuoteStore(config: .load())
   private let updater = Updater()
+  private let notifier = AlertNotifier()
   private var panel: FloatingPanel?
   private var statusItem: NSStatusItem?
   private var settingsWindow: NSWindow?
+  private var alertsWindow: NSWindow?
   private var modifierTimer: Timer?
   private var hotkey: GlobalHotkey?
 
@@ -42,6 +44,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     applyClickThrough()
     registerHotkey()
+    notifier.start()
+    store.onAlert = { [weak self] quote, hits in
+      guard let self else { return }
+      notifier.notify(quote, hits, strings: store.strings)
+    }
     store.start()
     updater.start()
   }
@@ -55,6 +62,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
     let menu = NSMenu()
     menu.addItem(item(store.strings.settings, #selector(openSettings)))
+    menu.addItem(item(store.strings.priceAlerts, #selector(openAlerts)))
     menu.addItem(panelItem())
     return menu
   }
@@ -73,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     let strings = store.strings
     let appMenu = NSMenu()
     appMenu.addItem(item(strings.settings, #selector(openSettings)))
+    appMenu.addItem(item(strings.priceAlerts, #selector(openAlerts)))
     appMenu.addItem(item(strings.showPanel, #selector(showPanel)))
     appMenu.addItem(.separator())
     appMenu.addItem(withTitle: strings.quitApp, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
@@ -104,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   }
 
   /// The one menu behind the panel's right-click and the menu bar icon.
-  // Grouped by kind: a pending update, the two everyday actions, the two submenus, then the three behaviour toggles
+  // Grouped by kind: a pending update, the everyday actions, the two submenus, then the three behaviour toggles
   // by how often they change.
   private func populate(_ menu: NSMenu) {
     let strings = store.strings
@@ -119,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
       break
     }
     menu.addItem(item(strings.settings, #selector(openSettings)))
+    menu.addItem(item(strings.priceAlerts, #selector(openAlerts)))
     menu.addItem(panelItem())
     menu.addItem(.separator())
 
@@ -214,6 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
           $0.symbols = symbols
           $0.longbridge = longbridge
           $0.finnhubKey = finnhubKey
+          $0.dropOrphanAlerts()
         }
         self?.settingsWindow?.close()
       },
@@ -225,6 +236,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     window.isReleasedWhenClosed = false
     window.center()
     settingsWindow = window
+    NSApp.activate()
+    window.makeKeyAndOrderFront(nil)
+  }
+
+  @objc private func openAlerts() {
+    alertsWindow?.close()
+    let view = AlertsView(store: store) { [weak self] in self?.alertsWindow?.close() }
+    let window = NSWindow(contentViewController: NSHostingController(rootView: view))
+    window.title = store.strings.alertsTitle
+    window.styleMask = [.titled, .closable]
+    window.isReleasedWhenClosed = false
+    window.center()
+    alertsWindow = window
     NSApp.activate()
     window.makeKeyAndOrderFront(nil)
   }
@@ -280,9 +304,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     guard let rawValue = sender.representedObject as? String, let setting = LanguageSetting(rawValue: rawValue)
     else { return }
     store.update { $0.language = setting }
-    // The panel follows the store on its own; the main menu and an open settings window were built once.
+    // The panel follows the store on its own; the main menu and the open windows were built once.
     NSApp.mainMenu = makeMainMenu()
     settingsWindow?.close()
+    alertsWindow?.close()
   }
 
   @objc private func toggleClickThrough() {
