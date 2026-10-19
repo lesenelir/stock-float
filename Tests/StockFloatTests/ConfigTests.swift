@@ -37,6 +37,7 @@ func rejectsUnreadableSymbols(input: String) {
   #expect(config.pollSeconds == 1)
   #expect(config.finnhubKey.isEmpty)
   #expect(config.upColor == .green)
+  #expect(config.greenShade == .system && config.redShade == .system)
   #expect(config.language == .system)
   #expect(config.hotkey == "ctrl+opt+s")
   #expect(config.textSize == .small)
@@ -52,6 +53,15 @@ func readsEveryColorScheme(raw: String, color: Config.UpColor) throws {
   #expect(config.upColor == color)
 }
 
+@Test func unknownShadesFallBackToTheSystemColors() throws {
+  let config = try JSONDecoder().decode(
+    Config.self, from: Data(#"{"symbols":["nvda"],"greenShade":"950","redShade":"400"}"#.utf8))
+
+  #expect(config.symbols == ["usNVDA"])
+  #expect(config.greenShade == .system)
+  #expect(config.redShade == .shade400)
+}
+
 @Test(arguments: [(0.0, 0.3), (0.7, 0.7), (5.0, 1.0)])
 func keepsOpacityInRange(stored: Double, opacity: Double) throws {
   let config = try JSONDecoder().decode(Config.self, from: Data(#"{"opacity":\#(stored)}"#.utf8))
@@ -65,6 +75,8 @@ func keepsOpacityInRange(stored: Double, opacity: Double) throws {
   var config = Config()
   config.symbols = ["hk00700"]
   config.upColor = .red
+  config.greenShade = .shade400
+  config.redShade = .shade600
   config.clickThrough = true
   config.language = .en
   config.hotkey = "cmd+shift+9"

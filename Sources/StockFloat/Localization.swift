@@ -79,6 +79,14 @@ struct Strings: Equatable, Sendable {
     }
   }
 
+  var green: String { t("绿色", "Green") }
+  var red: String { t("红色", "Red") }
+
+  /// A shade of green or red, named as Tailwind CSS names it, such as green-500.
+  func name(of shade: Config.Shade, in color: String) -> String {
+    shade == .system ? t("系统默认", "System") : "\(color)-\(shade.rawValue)"
+  }
+
   func name(of size: Config.TextSize) -> String {
     switch size {
     case .small: t("小", "Small")

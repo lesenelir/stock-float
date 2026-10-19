@@ -133,10 +133,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     menu.addItem(.separator())
 
     let appearanceMenu = NSMenu()
+    // So that the shade submenus can be turned off; every other item is always enabled.
+    appearanceMenu.autoenablesItems = false
     appearanceMenu.addItem(.sectionHeader(title: strings.colors))
     for color in Config.UpColor.allCases {
       appearanceMenu.addItem(
         choice(strings.name(of: color), #selector(selectColor(_:)), color.rawValue, store.config.upColor == color))
+    }
+    // The shades only matter while gains and losses are colored.
+    for (title, color, current, action) in [
+      (strings.green, "green", store.config.greenShade, #selector(selectGreenShade(_:))),
+      (strings.red, "red", store.config.redShade, #selector(selectRedShade(_:))),
+    ] {
+      let shadeMenu = NSMenu()
+      for shade in Config.Shade.allCases {
+        shadeMenu.addItem(choice(strings.name(of: shade, in: color), action, shade.rawValue, current == shade))
+      }
+      let shadeItem = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+      shadeItem.submenu = shadeMenu
+      shadeItem.isEnabled = store.config.upColor != .mono
+      appearanceMenu.addItem(shadeItem)
     }
     appearanceMenu.addItem(.sectionHeader(title: strings.textSize))
     for size in Config.TextSize.allCases {
@@ -289,6 +305,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
   @objc private func selectColor(_ sender: NSMenuItem) {
     guard let color = (sender.representedObject as? String).flatMap(Config.UpColor.init(rawValue:)) else { return }
     store.update { $0.upColor = color }
+  }
+
+  @objc private func selectGreenShade(_ sender: NSMenuItem) {
+    guard let shade = (sender.representedObject as? String).flatMap(Config.Shade.init(rawValue:)) else { return }
+    store.update { $0.greenShade = shade }
+  }
+
+  @objc private func selectRedShade(_ sender: NSMenuItem) {
+    guard let shade = (sender.representedObject as? String).flatMap(Config.Shade.init(rawValue:)) else { return }
+    store.update { $0.redShade = shade }
   }
 
   @objc private func selectTextSize(_ sender: NSMenuItem) {

@@ -14,8 +14,9 @@ struct QuoteListView: View {
         ForEach(store.config.symbols, id: \.self) { symbol in
           let quote = store.quotes[symbol]
           QuoteRow(
-            symbol: symbol, quote: quote, upColor: store.config.upColor, flash: store.config.flash,
-            strings: store.strings, scale: scale)
+            symbol: symbol, quote: quote, upColor: store.config.upColor,
+            green: store.config.greenShade.green ?? .green, red: store.config.redShade.red ?? .red,
+            flash: store.config.flash, strings: store.strings, scale: scale)
             .opacity(quote?.isStale(at: timeline.date) == true ? 0.45 : 1)
         }
         if store.config.symbols.isEmpty {
@@ -55,6 +56,9 @@ private struct QuoteRow: View {
   let symbol: String
   let quote: Quote?
   let upColor: Config.UpColor
+  /// The colours of gains and losses in the green-up scheme, and the other way round in the red-up one.
+  let green: Color
+  let red: Color
   /// Whether price moves light up the row.
   let flash: Bool
   let strings: Strings
@@ -134,7 +138,33 @@ private struct QuoteRow: View {
     if change == 0 {
       return .secondary
     }
-    return (change > 0) == (upColor == .green) ? .green : .red
+    return (change > 0) == (upColor == .green) ? green : red
+  }
+}
+
+extension Config.Shade {
+  /// Tailwind CSS v4's green of this shade, nil for the system green: its oklch colour in Display P3, which holds it.
+  var green: Color? {
+    switch self {
+    case .system: nil
+    case .shade300: Color(.displayP3, red: 0.6, green: 0.936, blue: 0.681)
+    case .shade400: Color(.displayP3, red: 0.4, green: 0.862, blue: 0.493)
+    case .shade500: Color(.displayP3, red: 0.309, green: 0.775, blue: 0.374)
+    case .shade600: Color(.displayP3, red: 0.244, green: 0.641, blue: 0.295)
+    case .shade700: Color(.displayP3, red: 0.198, green: 0.502, blue: 0.245)
+    }
+  }
+
+  /// Tailwind CSS v4's red of this shade, nil for the system red.
+  var red: Color? {
+    switch self {
+    case .system: nil
+    case .shade300: Color(.displayP3, red: 0.957, green: 0.652, blue: 0.645)
+    case .shade400: Color(.displayP3, red: 0.934, green: 0.432, blue: 0.423)
+    case .shade500: Color(.displayP3, red: 0.904, green: 0.263, blue: 0.253)
+    case .shade600: Color(.displayP3, red: 0.83, green: 0.14, blue: 0.133)
+    case .shade700: Color(.displayP3, red: 0.693, green: 0.116, blue: 0.105)
+    }
   }
 }
 

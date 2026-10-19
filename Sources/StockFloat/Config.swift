@@ -8,6 +8,12 @@ struct Config: Codable, Equatable, Sendable {
     case mono
   }
 
+  /// Which green or red gains and losses are drawn in: macOS's system colour, or a shade of Tailwind CSS's palette.
+  enum Shade: String, Codable, CaseIterable, Sendable {
+    case system
+    case shade300 = "300", shade400 = "400", shade500 = "500", shade600 = "600", shade700 = "700"
+  }
+
   enum TextSize: String, Codable, CaseIterable, Sendable {
     case small, medium, large
 
@@ -31,6 +37,8 @@ struct Config: Codable, Equatable, Sendable {
   var finnhubKey = ""
   var pollSeconds = 3.0
   var upColor = UpColor.green
+  var greenShade = Shade.system
+  var redShade = Shade.system
   var clickThrough = false
   var language = LanguageSetting.system
   /// Global shortcut that hides and shows the panel, written like `ctrl+opt+s`; empty disables it.
@@ -57,6 +65,9 @@ struct Config: Codable, Equatable, Sendable {
     finnhubKey = try container.decodeIfPresent(String.self, forKey: .finnhubKey) ?? defaults.finnhubKey
     pollSeconds = max(1, try container.decodeIfPresent(Double.self, forKey: .pollSeconds) ?? defaults.pollSeconds)
     upColor = try container.decodeIfPresent(UpColor.self, forKey: .upColor) ?? defaults.upColor
+    // A shade this version does not offer falls back to the system colour, not the whole config.
+    greenShade = (try? container.decodeIfPresent(Shade.self, forKey: .greenShade)) ?? defaults.greenShade
+    redShade = (try? container.decodeIfPresent(Shade.self, forKey: .redShade)) ?? defaults.redShade
     clickThrough = try container.decodeIfPresent(Bool.self, forKey: .clickThrough) ?? defaults.clickThrough
     language = try container.decodeIfPresent(LanguageSetting.self, forKey: .language) ?? defaults.language
     hotkey = try container.decodeIfPresent(String.self, forKey: .hotkey) ?? defaults.hotkey
