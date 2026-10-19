@@ -40,6 +40,8 @@ struct Config: Codable, Equatable, Sendable {
   var opacity = 1.0
   /// Show the app in the Dock (and the ⌘Tab switcher); the menu bar icon is always there.
   var dockIcon = true
+  /// Light up a row in the color of each regular-session move.
+  var flash = true
   /// Price alerts waiting to go off, for symbols of the watch list.
   var alerts: [PriceAlert] = []
 
@@ -61,6 +63,7 @@ struct Config: Codable, Equatable, Sendable {
     textSize = try container.decodeIfPresent(TextSize.self, forKey: .textSize) ?? defaults.textSize
     opacity = min(1, max(0.3, try container.decodeIfPresent(Double.self, forKey: .opacity) ?? defaults.opacity))
     dockIcon = try container.decodeIfPresent(Bool.self, forKey: .dockIcon) ?? defaults.dockIcon
+    flash = try container.decodeIfPresent(Bool.self, forKey: .flash) ?? defaults.flash
     // An alert that cannot be read is dropped, not the whole config.
     alerts = ((try? container.decodeIfPresent([PriceAlert].self, forKey: .alerts)) ?? []).filter { $0.price > 0 }
     dropOrphanAlerts()

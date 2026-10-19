@@ -42,6 +42,7 @@ func rejectsUnreadableSymbols(input: String) {
   #expect(config.textSize == .small)
   #expect(config.opacity == 1)
   #expect(config.dockIcon)
+  #expect(config.flash)
 }
 
 @Test(arguments: [("green", Config.UpColor.green), ("red", .red), ("mono", .mono)])
@@ -70,6 +71,7 @@ func keepsOpacityInRange(stored: Double, opacity: Double) throws {
   config.textSize = .large
   config.opacity = 0.7
   config.dockIcon = false
+  config.flash = false
 
   try config.save(to: url)
 

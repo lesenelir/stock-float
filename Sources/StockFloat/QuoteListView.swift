@@ -13,7 +13,9 @@ struct QuoteListView: View {
       VStack(alignment: .leading, spacing: 2) {
         ForEach(store.config.symbols, id: \.self) { symbol in
           let quote = store.quotes[symbol]
-          QuoteRow(symbol: symbol, quote: quote, upColor: store.config.upColor, strings: store.strings, scale: scale)
+          QuoteRow(
+            symbol: symbol, quote: quote, upColor: store.config.upColor, flash: store.config.flash,
+            strings: store.strings, scale: scale)
             .opacity(quote?.isStale(at: timeline.date) == true ? 0.45 : 1)
         }
         if store.config.symbols.isEmpty {
@@ -53,6 +55,8 @@ private struct QuoteRow: View {
   let symbol: String
   let quote: Quote?
   let upColor: Config.UpColor
+  /// Whether price moves light up the row.
+  let flash: Bool
   let strings: Strings
   let scale: Double
 
@@ -108,9 +112,9 @@ private struct QuoteRow: View {
           opacity > 0 ? .easeOut(duration: 0.1) : .easeOut(duration: 0.6)
         }
     }
-    // Only regular-session moves flash; extended-hours ticks update quietly.
+    // Only regular-session moves flash, and only while the user wants them to; extended-hours ticks update quietly.
     .onChange(of: quote?.price) { old, new in
-      guard quote?.extended == nil, let old, let new, old != new else { return }
+      guard flash, quote?.extended == nil, let old, let new, old != new else { return }
       flashColor = tint(for: new - old, otherwise: .gray)
       flashCount += 1
     }

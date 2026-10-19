@@ -150,6 +150,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
           "\(Int((opacity * 100).rounded()))%", #selector(selectOpacity(_:)), opacity,
           store.config.opacity == opacity))
     }
+    appearanceMenu.addItem(.separator())
+    appearanceMenu.addItem(item(strings.flash, #selector(toggleFlash), checked: store.config.flash))
     let appearanceItem = NSMenuItem(title: strings.appearance, action: nil, keyEquivalent: "")
     appearanceItem.submenu = appearanceMenu
     menu.addItem(appearanceItem)
@@ -298,6 +300,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     guard let opacity = sender.representedObject as? Double else { return }
     store.update { $0.opacity = opacity }
     panel?.alphaValue = opacity
+  }
+
+  @objc private func toggleFlash() {
+    store.update { $0.flash.toggle() }
   }
 
   @objc private func selectLanguage(_ sender: NSMenuItem) {

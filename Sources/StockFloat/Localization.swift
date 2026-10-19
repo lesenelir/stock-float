@@ -69,6 +69,7 @@ struct Strings: Equatable, Sendable {
   var colors: String { t("配色", "Colors") }
   var textSize: String { t("字号", "Text Size") }
   var opacity: String { t("不透明度", "Opacity") }
+  var flash: String { t("价格变动时闪烁", "Flash on price change") }
 
   func name(of color: Config.UpColor) -> String {
     switch color {
